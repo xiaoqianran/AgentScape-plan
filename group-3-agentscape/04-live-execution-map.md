@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。它不替代 `00-master-roadmap.md`、`01-AgentScape-integration-plan.md` 或跨项目 contract；稳定文档回答“最终系统要长什么样”，本文件回答“当前代码已经做到哪里、下一项具体工作是什么、谁可以做、依赖什么、如何验收”。
 >
-> 状态快照：**2026-08-25 01:27 +08:00**。任何实施前必须重新读取 AgentScape `git status`、HEAD、分支、stash 与 CodeGraph；不要把本文件里的 commit/status 当永久事实。
+> 状态快照：**2026-08-25 01:54 +08:00**。任何实施前必须重新读取 AgentScape `git status`、HEAD、分支、stash 与 CodeGraph；不要把本文件里的 commit/status 当永久事实。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -124,19 +124,20 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 | AS-05 Single Asset Pipeline | `MERGED` | `162a101 feat: add verified artifact asset production loop` | 已进入 Compiler/Admission truth |
 | AS-06/08 Evidence + Admission | `MERGED` | `a4b3297` / `571c747` / `5202f6f` / `d28980d` | provider evidence 保持非 Runtime truth |
 | E-01 EmbodiedGen part evidence bridge | `MERGED` | `671e1ac` + `51bf326` + `d28980d` | production provider transport / SAPIEN provider Gate 继续独立推进 |
-| AS-09 Agent-visible async generation | `MERGED` | `9523ecc feat: add agent-visible async generation orchestration` | AS-10 Job Center / Connector configuration UX |
+| AS-09 Agent-visible async generation | `MERGED` | `9523ecc feat: add agent-visible async generation orchestration` | 已进入共享 main |
+| AS-10A Job Center core | `MERGED` | `df9f9c1 feat: add generation job center` | AS-10B richer schema/model/workflow UX + real Connector product E2E |
 
 ### 3.1 AgentScape main
 
-2026-08-25 01:27 +08:00 重新读取后的代码事实：
+2026-08-25 01:54 +08:00 重新读取后的代码事实：
 
-- 本地 `main@9523ecc`，相对 `origin/main@d28980d` ahead 1；本轮未 push；
-- HEAD：`9523ecc feat: add agent-visible async generation orchestration`；
+- `main == origin/main == df9f9c1`；AS-09/AS-10A 均已推送到共享 main；
+- HEAD：`df9f9c1 feat: add generation job center`；
 - `0684af0 / fefa495 / 47470c0 / 6a08f31 / 140acd9 / ac3f996 / 09e63cc / 162a101 / a4b3297 / 571c747 / 5202f6f / 51bf326 / d28980d / 9523ecc` 均已确认在当前本地 main ancestry 中；
 - 因此 Provider / Connector / Async Job / Artifact / single-asset Compiler→Admission 基础层均已进入 `main`，不应再标为 `PLANNED`；
-- AS-09 已 fast-forward 进入本地 main，commit `9523ecc`：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
+- AS-09 `9523ecc` 已进入并推送共享 main：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
 - AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
-- `9523ecc` 已进入当前本地 `main`，且在该 commit 身份上重跑 assets/full tests/build 均 exit code 0，因此 AS-09 可标 `MERGED`；远端 `origin/main` 尚未 push。
+- `9523ecc` 已进入共享 `origin/main`，AS-09 为 `MERGED`；其真值边界继续由后续 AS-10 UI 消费而不重写。
 
 当前生成主链已达到：
 
@@ -161,7 +162,7 @@ Provider/Capability
 - Provider identity/version/health/status/capability discovery/execution binding/result consumer 已正式进入主线；
 - Connector capability snapshot 已通过 C-02 normalize 后写入 Registry；
 - 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
-- 当前完整仓库验证已包含该基础层：`136 files / 590 tests PASS`，production build exit code 0。
+- 当前完整仓库验证已包含该基础层：`138 files / 598 tests PASS`，production build exit code 0。
 
 ### 3.3 1.35 Constrained WorldSpec Revision
 
@@ -465,7 +466,43 @@ AS-EG-05 base fixture 与 semantic fixture 都已完成；semantic bridge 已由
 - `npm run assets:validate`：PASS；
 - `npm run build`：exit code 0。
 
-AS-09 本地 merge Gate 已完成。下一项应进入 AS-10 Job Center / Connector configuration UX；远端同步由独立 push/review 流程处理，不应先扩 Generated World v2。
+AS-09 merge/push Gate 已完成；其 UI 消费层已由 AS-10A Job Center core 接续。
+
+### AS-10A Generation Job Center Core
+
+**状态：MERGED — `df9f9c1`；已推送共享 `origin/main`。**
+
+已完成第一版产品级 Job Center core：
+
+- 工作台新增独立“生成”Tab，不与任务/对象面板混合；
+- Connector endpoint 只保存 loopback URL；支持配对/恢复/撤销，并明确不在浏览器保存 provider Secret；
+- UI 只消费 `GenerationOrchestrator` 的 sanitized control-plane view，不直接读取/复制 Job store 状态机；
+- Provider/Capability browser 显示 normalized operation、input schema/type、profile、cost/duration class、auth/connection prerequisite；
+- 外部 Job submit 必须逐次显式勾选“可能产生费用”确认，不跨 Job 持久化确认状态；
+- Job list 展示 status/stage/progress/relations，可 refresh/reconcile、cancel；
+- `provider-succeeded` 后才开放 Artifact import / compile；Provider success 本身不会开放“加入世界”；
+- Artifact import 展示 integrity/hash/producer/lineage；
+- Compiler/Admission 结果展示 `asset-ready/provisional/rejected` 与 admission reasons；
+- “导入 Artifact”“编译/注册资产”“加入当前世界”“用于 WorldSpec”是四个分离动作；WorldSpec 动作保持 disabled，等待 AS-11；
+- provider success + compiler rejected 会显式显示“不会提升为 asset-ready”；
+- provisional asset 如进入当前世界仍通过现有 `spawnAsset` 编辑态语义，不冒充 world-ready。
+
+实现边界：
+
+- 新增 `src/generation/GenerationJobCenter.js`；
+- `GenerationOrchestrator` 新增 safe connector status、cached Job list、reconcile、pair/revoke 控制面，并把 relations/model-independent capability metadata 交给 UI；
+- `main.js` 只负责挂载 Job Center；动态 provider/job/artifact 字段全部通过 DOM `textContent` 渲染；
+- 没有新增 provider credential persistence，没有把 signed URL/provider private response 暴露给 UI；
+- 没有修改 Physics / Interaction / Navigation / World admission truth。
+
+验收证据（`df9f9c1`）：
+
+- Job Center 专项：`4 files / 17 tests PASS`；
+- full suite：`138 files / 598 tests PASS`；
+- `npm run assets:validate`：PASS；
+- `npm run build`：exit code 0（仅保留既有 browser externalization/chunk-size warnings）。
+
+AS-10 尚未完全宣告结束。下一 Gate 为 **AS-10B**：只有当 Provider contract 真正提供 richer model/workflow/schema metadata 时，再把当前 JSON fallback 升级成更强的 schema-driven fields/model/workflow picker，并补真实 Connector 进程级 product E2E。禁止 UI 自己虚构 provider model/workflow catalog。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 
@@ -607,7 +644,7 @@ R-01 -> P-01 -> W-01/B-01/R-02 按 ownership 串行收口。
 
 ### Phase 4：Agent-visible Generation
 
-AS-09 已 `MERGED`（`9523ecc`）：高层 skills、async resume、Artifact import、Compiler/Admission orchestration 已验证；下一项进入 AS-10 Job Center / Connector 配置与可视化恢复。Agent 始终不直接拿 provider 私有 API。
+AS-09 已 `MERGED`（`9523ecc`）；AS-10A Job Center core 已 `MERGED`（`df9f9c1`）。当前 UI 已覆盖 Connector/Job/Artifact/Compiler/Admission 的安全主链；下一项是 AS-10B richer schema/model/workflow UX + 真实 Connector product E2E。Agent/UI 始终不直接拿 provider 私有 API。
 
 ### Phase 5：Generated World v2
 
@@ -638,14 +675,12 @@ AS-14～19：environment/room、offline restore、安全、observability、fault
 
 按当前状态，下一次读取 AgentScape 时优先回答：
 
-1. `9523ecc` 是否已经完成远端 review/push，同步到共享 `origin/main`？
-2. Runtime 的 Connector endpoint/pairing 初始化是否需要独立配置 UX，而不是长期依赖裸 `localStorage` key？
-3. AS-09 的高层 `generateAndCompileAsset` 是否需要进一步支持 EmbodiedGen multi-artifact bundle 的正式选择/导入，而不是只编译 GLB 主产物？
-4. Job resume/reconcile 在真实 Connector 进程重启场景下是否已有 production E2E，而不仅是 in-process contract tests？
-5. cost/confirmation policy 是否应在 AS-10 前增加显式产品语义，避免 Agent 对付费 provider 静默提交？
-6. Job Center 是否能只消费现有 sanitized Job projection，不复制状态机？
-7. E-01 的真实 production provider artifact 是否已通过正式 Job/Artifact transport，而非仅 frozen fixture？
-8. SAPIEN provider evidence 是否有新的 production VERIFIED 证据；若有，是否仍保持 provider-only provenance？
-9. AS-10 完成后再评估是否解锁 AS-11/12 Generated World v2；不得越过 asset/world truth Gate。
+1. AS-10A 的 Job Center 是否已在真实 Connector 进程上完成 pair → capability → submit → restart/reconcile → artifact → compile 的浏览器产品 E2E？
+2. Provider capability contract 是否已经真实提供 model/workflow/profile/optionsSchema 元数据；若没有，UI 不得自行硬编码 provider 私有 catalog。
+3. 哪些 JSON Schema 子集值得在 AS-10B 生成结构化表单，哪些仍应保留 JSON fallback？
+4. cost confirmation 是否需要按 provider/capability cost class 增加更细 policy，而不是只有统一的逐次确认？
+5. EmbodiedGen multi-artifact bundle 是否需要在 Job Center 中增加 artifact role selector，再进入 BundleAdapter，而不是默认优先 GLB？
+6. real Connector restart 后 local Job identity / idempotency / event cursor 是否都能无重复付费恢复？
+7. AS-10B 完成后是否具备进入 AS-11 Prompt→WorldSpec Planner 的证据；不得因 UI 可见就跳过 asset/world truth Gate。
 
 这些问题决定下一项任务，不按日期机械推进 AS 编号。
