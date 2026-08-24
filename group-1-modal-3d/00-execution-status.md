@@ -11,13 +11,16 @@
 | 仓库 | 当前 HEAD | 事实 |
 |---|---|---|
 | `modal-3D` | `805da24` | 4 个活动 Generation Worker + Cloud SAM 3.1；Gateway 已统一为私有 `generate(input_path, options)` 路由；共享 artifact Volume 刷新问题已修复并记录 |
-| `modal-3D-client` | `fe7abbd` | Project Workspace、durable remote call 恢复、Cloud/Local/Auto SAM、SAM refine、四模型 UI/Viewer、原生 GLB 导出、Local SAM v1 install/update/uninstall 已落地 |
-| `AgentScape-plan` | 更新本文件前 `2653182` | 现有三份第一组计划是目标设计，尚未记录近期客户端/Local SAM 的实际完成度 |
+| `modal-3D-client` | `3ca937e` | Project Workspace、Cloud/Local/Auto SAM、四模型 UI/Viewer、原生 GLB 导出、Local SAM v1 完整生命周期，以及 recoverable Durable Job 状态机已落地 |
+| `AgentScape-plan` | 更新本文件前 `f6b995a` | 第一组已有动态 tracker；本次同步 P0-A Durable Job correctness 的真实完成证据 |
 
 已验证证据：
 
-- `modal-3D-client` HEAD `fe7abbd` 的 GitHub Windows run `32693389062`：completed / success；
+- `modal-3D-client` HEAD `3ca937e` 的 GitHub Windows run `32695629317`：completed / success；
 - Windows CI 已覆盖 frontend、PyInstaller Agent smoke、Tauri、NSIS installer 与 installer upload；
+- Durable Job P0-A 已有 14 个 Python unit/lifecycle tests，并在 Windows CI 的 Python Agent 步骤中执行；
+- 真实 Modal CPU cancel canary：`cancel_requested -> cancelled`，以及“远端已先完成 + 随后 cancel -> succeeded”两种 race 均通过；
+- 真实 Modal reconnect canary：本地 Modal client 断开后 Job 进入 `connection_required`，恢复同一 client 后使用原 local Job ID + 原 `remote_call_id` 得到 `succeeded`，无二次提交；
 - `local-sam-runtime-v1` 是正式 GitHub Release，bootstrap `34,709,811` bytes；
 - bootstrap SHA256：`1392402accd8985cbecabe62f766a847aee613c868e3dfb5191253bb4db0d73d`；
 - SAM 3.1 checkpoint 来自 `modal-3d-sam31-weights/sam31/sam3.1_multiplex.pt`，`3,502,755,717` bytes，SHA256 `0567debeec80ba4ac6369540c6c248025283cb3ff2b92827509e57e2b3541cb6`；
@@ -32,7 +35,7 @@
 1. `modal-3D-client/agent/models.py` 仍硬编码 4 个模型、profile 和历史 warm time；client 还没有从云端 capability 得到模型事实。
 2. `modal-3D/modal_3d/gateway.py` 当前只返回 `call_id + model`，没有 `modal-3d.capabilities.v1`、request envelope、idempotency、input descriptor。
 3. `modal-3D/modal_3d/common.py::generation_result()` 已统一外层 result shape，但 artifact 只有 `path/bytes/mime`，没有 hash、opaque ID、producer/revision/validation manifest。
-4. `agent/jobs.py` 的 durable store 已能跨 Agent 重启恢复 Modal FunctionCall ID，但状态仍只有 `running/succeeded/failed/cancelled/expired`；任意非 timeout/expired 的 poll 异常都会永久写成 `failed`。
+4. `agent/jobs.py` 已完成 Durable Job correctness slice：DB `user_version=1` migration，状态含 `running/connection_required/cancel_requested/succeeded/failed/cancelled/expired`，并暴露 stable `error_code/retryable/updated_at`；临时认证/网络/Modal service 错误不再 terminal failed。仍未完成的是 stage/event log、artifact relation 和 submit idempotency。
 5. `agent/artifacts.py` 已有安全 relative path、内容寻址上传与 SHA-256，但 read API 仍以 Volume path 为身份，没有 job-scoped opaque artifact ID。
 6. Project Workspace 已持久化 source/SAM/canonical/model/job/GLB lineage，但 `POST /v1/projects` 仍是 `await file.read()` 后直接创建；MIME magic、像素、alpha、EXIF、输入 hash/limits 尚未形成统一 input descriptor。
 7. Native GLB export 已经是流式远端读取 -> 本地临时文件 -> glTF v2/hash/bytes 验证 -> Tauri 原生保存；但“成功结果的长期本地 verified cache”尚未建立。
@@ -114,8 +117,8 @@ P0-A Job 正确性
 | C3D-02 本地输入管线 | TODO | Project source 已持久化 | magic/bytes/pixels/EXIF/alpha/hash；limits 来自 capability，不另写一套数字 |
 | C3D-03 SAM provider | PARTIAL | Cloud/Local/Auto、refine、Local install/update/uninstall 已完成 | direct RGBA `skip`、provider selection/recovery contract；Windows+NVIDIA 实机证据 |
 | C3D-04 模型/profile/options | PARTIAL | recommended profiles 可真实提交四模型 | profile 由 capability 驱动；advanced schema 以后再做 |
-| C3D-05 Durable Job Store v1 | PARTIAL | SQLite + remote call ID + restart restore | migration/version、stage/error code/retryable/events/artifact relation |
-| C3D-06 恢复/取消/重试/幂等 | PARTIAL | restart restore、poll、cancel 已有 | transient/auth/network 不可 terminal failed；cancel race/idempotency/retry semantics |
+| C3D-05 Durable Job Store v1 | PARTIAL | SQLite + remote call ID + restart restore + DB v1 migration + `updated_at/error_code/retryable` 已完成 | stage/event log、artifact relation、后续 DB compatibility/backup Gate |
+| C3D-06 恢复/取消/重试/幂等 | PARTIAL | transient/auth/network 可恢复；`cancel_requested` + cancel race 已验证；真实 reconnect 保留同一 remote call | submit idempotency、event/retry policy、更多故障注入 |
 | C3D-07 Artifact Cache/Workspace | PARTIAL | Project SQLite、source、native export、Local SAM data 生命周期 | verified content-addressed result cache、opaque artifact ID、远端 expiry 后仍可打开 |
 | C3D-08 React 状态机 | TODO | MVP workflow 可用 | 等 C3D-05/07 稳定后再拆；当前不要先重构 UI |
 | C3D-09 Viewer/验证 | PARTIAL | GLTFLoader/OrbitControls/GLB preview、原生 save | viewer summary/budget/error 分类；只消费 verified local artifact |
@@ -123,7 +126,7 @@ P0-A Job 正确性
 | C3D-11 Local Modal Connector | TODO | 尚未对 AgentScape 开放 | 等 C3D-05/07 完成后实现 pairing/capabilities/jobs/artifacts/events |
 | C3D-12 可观测性 | PARTIAL | Agent/runtime 日志与部分状态存在 | correlation chain、job events、诊断包 |
 | C3D-13 打包升级 | PARTIAL | Windows CI/NSIS、Rust cache、Local SAM runtime transactional update | sidecar/app/DB compatibility manifest、干净 Windows E2E |
-| C3D-14 测试 | PARTIAL | Windows smoke + 多次真实 Modal E2E | Python job/artifact/input 单测；契约 fixtures；网络/cancel/expiry 负向测试 |
+| C3D-14 测试 | PARTIAL | Windows smoke + 14 个 Job/Project 单测 + 多次真实 Modal canary/E2E | artifact/input contract 单测、schema fixtures、expiry/hash/owner-scope 负向测试 |
 
 ### Local SAM v1 决策
 
@@ -141,11 +144,11 @@ Local SAM 当前进入**功能冻结**：
 
 以下顺序是当前执行顺序，不是建议菜单。
 
-### P0-A：Durable Job correctness slice
+### P0-A：Durable Job correctness slice ✅ DONE (2026-08-24)
 
 对应：C3D-05/C3D-06、联合契约 E2E-04/05/06。
 
-**先修原因**：当前 `JobManager.poll()` 会把 Modal 临时网络/认证/服务错误永久写成 `failed`；这是已知正确性 bug，且 Connector 未来会直接放大这个问题。
+**完成结论**：已修复。`JobManager.poll()` 不再把临时 Modal 网络/认证/服务异常永久写成 `failed`；取消也不再在 SDK `cancel()` 返回后伪造终态。
 
 涉及文件：
 
@@ -180,13 +183,16 @@ running -> cancel_requested -> cancelled OR succeeded (cancel race)
 5. UI 能区分“云端仍可能运行，只是当前连接断开”和真正失败；
 6. stable error code/message 不直接显示远端 traceback。
 
-验收：
+验收证据：
 
-- 单元测试模拟 `TimeoutError/ConnectionError/AuthError/InternalError/OutputExpiredError/remote exception`；
-- 断网/撤销 token 后 local Job 不进入 `failed`；
-- 恢复凭据后用原 `remote_call_id` 得到终态；
-- cancel race 两个方向都有测试；
-- Windows packaged Agent smoke 继续全绿。
+- commit：`3ca937e fix: make generation jobs recoverable`；
+- Windows CI：run `32695629317`，frontend / Python unit tests / packaged Agent smoke / Tauri / NSIS / installer upload 全绿；
+- unit tests：14 个，覆盖 pending、connection、auth、remote timeout、remote exception、expired、cancel retry/race、legacy DB migration、future DB guard、Project active-delete Gate；
+- Modal cancel canary：`cancel_requested -> cancelled`，以及完成优先 race -> `succeeded`；
+- Modal reconnect canary：`connection_required -> running -> succeeded`，local Job ID 和 remote call ID 均保持不变；
+- UI 已区分 `connection_required`、`cancel_requested` 与真实 terminal failure；远端异常不直接把 traceback 作为用户 message。
+
+尚未包含在本 slice：submit idempotency、event log、SSE、artifact relation。这些继续留在 C3D-05/06 后续，不把 P0-A 扩成大重构。
 
 **禁止顺手做**：完整 Job events UI、SSE、Connector、React reducer 大重构。
 
@@ -367,6 +373,6 @@ Done 必须至少有与任务匹配的证据：unit/contract、packaged Windows 
 
 ## 8. 下一次执行入口
 
-下一次继续第一组，不重新讨论架构，直接从 **P0-A Durable Job correctness slice** 开始。
+下一次继续第一组，不重新讨论 Durable Job 架构，直接从 **P0-B `modal-3d.capabilities.v1` 单一事实源** 开始。
 
-第一条代码检查点已经明确：`modal-3D-client/agent/jobs.py::poll()` 当前把所有非 timeout/expired exception 写成 terminal `failed`。先修这个事实，再扩展状态和恢复语义。
+第一条执行原则：先在 `modal-3D` 上线机器可读 capability contract，并用纯 CPU contract tests 固定 schema；再让 client 消费 capability、投影 `/v1/models`，最后删除 `agent/models.py` 中重复的模型事实。不要先改 React UI，也不要把 capability 变成另一个复杂 registry framework。
