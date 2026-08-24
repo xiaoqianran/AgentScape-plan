@@ -380,6 +380,8 @@ Kaggle Hub 当前 WebP quality 90 可继续作为历史/preview，但正式 2D�
 
 ## 9. 计划维护规则
 
+AgentScape 的实时实现进度不回写成长期架构事实；HEAD/branch/stash、并行 ownership、下一可执行切片与验证证据统一维护在 `group-3-agentscape/04-live-execution-map.md`。具体任务使用 `05-execution-task-spec-template.md`，只有稳定 contract 变化才更新本总路线与 01/02/03 文档。
+
 实施时每个里程碑必须更新：
 
 - 当前代码事实与计划差异；

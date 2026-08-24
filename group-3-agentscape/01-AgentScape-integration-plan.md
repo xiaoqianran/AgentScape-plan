@@ -1,5 +1,7 @@
 # `AgentScape` 对接 Modal 与 EmbodiedGen 的实施计划
 
+> 实施状态不在本文维护。当前代码 HEAD、branch/stash、并行任务 ownership、下一可执行切片与验收证据统一记录在 [`04-live-execution-map.md`](./04-live-execution-map.md)。本文保持目标架构与 AS-00～AS-19 稳定定义，避免实时进度污染长期 contract。
+
 ## 1. 项目定位
 
 AgentScape 是最终消费与验证层。它不把“生成模型返回了一个 GLB”当作世界完成，而是维护下面的事实链：
