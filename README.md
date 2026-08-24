@@ -25,6 +25,8 @@
    - [`group-3-agentscape/01-AgentScape-integration-plan.md`](./group-3-agentscape/01-AgentScape-integration-plan.md)
    - [`group-3-agentscape/02-provider-artifact-world-contract.md`](./group-3-agentscape/02-provider-artifact-world-contract.md)
    - [`group-3-agentscape/03-dual-generation-strategy-plan.md`](./group-3-agentscape/03-dual-generation-strategy-plan.md)
+   - [`group-3-agentscape/04-live-execution-map.md`](./group-3-agentscape/04-live-execution-map.md)：动态实现账本、下一任务切片、依赖 Gate 与并行 ownership；实施 AgentScape 前优先读取。
+   - [`group-3-agentscape/05-execution-task-spec-template.md`](./group-3-agentscape/05-execution-task-spec-template.md)：把 Live Map 中的一个切片固化成可独立交付、可验收的 AI/开发任务。
 7. 跨项目治理与落地顺序
    - [`cross-cutting/01-master-contracts.md`](./cross-cutting/01-master-contracts.md)
    - [`cross-cutting/02-milestones-testing-risks-rollout.md`](./cross-cutting/02-milestones-testing-risks-rollout.md)
