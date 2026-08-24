@@ -4,15 +4,15 @@
 
 ## Status
 
-C-01 `Connector Pairing Contract` is now **COMMITTED_NOT_MERGED**.
+C-01 `Connector Pairing Contract` is now **MERGED**.
 
 ```text
 branch: feat/c01-connector-pairing
-commit: dbb52a5 feat: add scoped connector pairing sessions
-base:   0684af0 feat: add provider capability registry
+final main commit: fefa495 feat: add scoped connector pairing sessions
+base after rebase: 671e1ac feat: bridge EmbodiedGen evidence into compiler
 ```
 
-Main is currently dirty with an independent EmbodiedGen evidence-bridge track, so C-01 is intentionally not merged yet.
+The independent EmbodiedGen evidence-bridge track completed first (`671e1ac`), after which C-01 was rebased, focused-tested, fast-forwarded into `main`, and deployed.
 
 ## Delivered contract
 
@@ -82,9 +82,9 @@ ConnectorSession impact: client + connector tests only
 
 The module is intentionally not wired into main UI or Runtime yet. This keeps C-01 a narrow security/session boundary.
 
-## Merge Gate
+## Merge Gate — completed
 
-Before C-01 becomes `MERGED`:
+Completed sequence:
 
 1. current EmbodiedGen dirty WIP on main must be committed or removed;
 2. rebase C-01 onto the new main;
@@ -95,3 +95,13 @@ Before C-01 becomes `MERGED`:
 ## Newly unlocked work
 
 C-02 `Capability Discovery Adapter` can be designed and implemented on top of the C-01 feature branch, but must not be merged to main before C-01's merge gate is satisfied.
+
+## Final main evidence
+
+GitHub Actions run `32698144927` for `fefa495` completed successfully:
+
+```text
+Test and build          success
+Deploy to GitHub Pages  success
+workflow conclusion     success
+```

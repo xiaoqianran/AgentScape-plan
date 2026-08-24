@@ -6,8 +6,9 @@
 Task ID:        C-02
 Parent Plan:    AS-02 / Gate L2
 Owner Track:    Provider / Connector
-Status:         PLANNED_READY_ON_C01_BRANCH
-Base Commit:    dbb52a5
+Status:         MERGED
+Base Commit:    fefa495
+Final Commit:   47470c0
 Feature Branch: feat/c02-capability-discovery
 ```
 
@@ -240,3 +241,25 @@ No changes to Physics/Interaction tests should be required.
 - [ ] production build PASS;
 - [ ] feature commit pushed;
 - [ ] C-01 merge state rechecked before merge.
+
+## 16. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       47470c0 feat: add connector capability snapshots
+Merged into main:   yes
+CodeGraph impact:   applyProviderSnapshot = 5 nodes / 4 edges
+Focused tests:      4 files / 33 tests PASS
+Full JS regression: 116 files / 424 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 19.05s)
+Python smoke:       4/4 PASS
+GitHub Actions:     build success / deploy success
+CI run:             32698268133
+```
+
+C-02 preserves the key boundary: discovered capability descriptors are queryable but remain non-executable until a later Job execution binding exists.
+
+### Unlocked Gate
+
+C-01 + C-02 satisfy the Connector session/capability foundation required to begin J-01 Async Generation Job projection.
