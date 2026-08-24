@@ -19,27 +19,16 @@
 
 ### 2.1 `modal-build` 基线
 
-远端 `master` 当前正式基线：
+远端 `master` 当前正式基线已经推进到：
 
-- `ef6e4cc add EmbodiedGen affordance CUDA artifact builder`
+- `69c910c add validated EmbodiedGen affordance core runtime`
+- 该提交在 `ef6e4cc add EmbodiedGen affordance CUDA artifact builder` 之上完成 P3-SAM runtime、GraspGen raw inference、模型权重供应链与 AgentScape-native segmentation evidence；
 - 更早生产验证：
   - Image→3D：`79370bf document warning-free EmbodiedGen production E2E`
   - Text→3D：`2ca3355 document production Text-to-3D validation`
   - Retexture：`96a8d65 document production EmbodiedGen retexture validation`
 
-2026-08-24 当前工作区正在继续 Affordance，尚未冻结为正式提交，涉及：
-
-- `modal_build/embodiedgen_affordance.py`
-- `modal_build/embodiedgen_affordance_weights.py`
-- `modal_build/embodiedgen_graspgen_weights.py`
-- `patches/embodiedgen-v2.0.0/production/p3sam-no-flash.patch`
-- `runtime/embodiedgen_affordance_l40s.py`
-- `tests/test_embodiedgen_affordance_builder.py`
-- `tests/test_embodiedgen_affordance_runtime.py`
-- `tests/test_embodiedgen_affordance_weights.py`
-- `tests/test_embodiedgen_graspgen_weights.py`
-
-因此：Affordance 的实时事实应以本文件记录的验证证据为准，不能仅以远端 `ef6e4cc` 推断全部能力已经存在。
+`69c910c` 提交前本地测试为 **74/74 PASS**，并已推送到 `origin/master`。因此以下 Affordance core 能力已经不是 dirty experiment，而是有远端提交与真实 Modal/L40S 证据的正式基线。
 
 ### 2.2 已验证的 Affordance 供应链
 
@@ -87,18 +76,28 @@
 - `affordance/mesh_part_seg.glb`
 - `affordance/part_segmentation.json`
 - `affordance/validation_report.json`
+- `affordance/agentscape_part_segmentation.v1.json`
 
-这证明的是：**P3-SAM functional part segmentation 在当前 production mesh 上可运行并生成完整 face partition**。
+compiler-native evidence 已额外验证：
 
-它暂时不证明：
+- primary GLB SHA-256：`4990691a19e7abcfd7c67853fb907b55792c133635631105eccdda6f2aae1861`；
+- sourceNode：`geometry_0`；
+- primitive count：1；
+- 50,000 GLB triangles 全部对应到 source OBJ face；
+- vertex identity 最大绝对误差约 `5e-9`；
+- mapping strategy：`verified-vertex-identity-triangle-index-set`；
+- 任一 vertex drift、duplicate triangle、missing face 都 fail closed。
 
-- provider 的 OBJ `face_ids` 与最终交给 AgentScape Compiler 的 GLB primitive face order 已严格对齐；
+因此 AFF-02 的核心 Gate 已通过：**P3-SAM labels 已与最终 primary GLB primitive triangle order 明确绑定**，不再依赖 face count 或颜色猜测。
+
+它仍然不证明：
+
 - part 有真实 joint；
 - semantic label 正确；
-- grasp 可执行；
-- AgentScape/Rapier 已验证这些 part。
+- raw grasp 等于可执行 pickup；
+- AgentScape/Rapier 已验证这些 grasp。
 
-### 2.4 GraspGen 权重已预加载，但 raw inference worker 尚未实现
+### 2.4 GraspGen raw 6-DoF inference 已真实 E2E
 
 固定 Hugging Face revision：
 
@@ -112,7 +111,20 @@ Franka Panda 文件：
 | `graspgen_franka_panda_gen.pth` | 907,408,223 | `0597583b89b322d42ceb4e596967d6ed68d1b56cba4039895909ccd5bdc66eff` | VERIFIED download |
 | `graspgen_franka_panda_dis.pth` | 165,853,892 | `e47d703c63b54c2d11fbc1effd43898f251b4147250888541e3b16e9c0d19e1c` | VERIFIED download |
 
-GraspGen 上游 generator / discriminator 已显式 `enable_flash=False`。当前尚缺的关键证据是：在真实 production URDF 坐标系下运行 generator + discriminator，并输出有限、非空、可追溯的 6-DoF grasp candidates。
+GraspGen 上游 generator / discriminator 已显式 `enable_flash=False`。`69c910c` 已新增 raw inference worker，并对同一个 production Job 做真实 L40S 验证：
+
+- 输入来自 production URDF collision mesh，并解析 mesh `scale`、collision `origin xyz/rpy`；
+- generator + discriminator 均从固定 revision/固定 SHA 权重离线加载；
+- 输出 `affordance/raw_grasps.franka.v1.json`；
+- top-20 raw grasps；
+- confidence 范围约 `0.50379 .. 0.86179`；
+- rotation orthogonality max error 约 `2.38e-7`；
+- rotation determinant max error 约 `4.77e-7`；
+- model load 约 `2.552 s`；
+- inference 约 `0.868 s`；
+- result marker：`GRASPGEN_RAW_GRASPS_OK`。
+
+这证明的是 **GraspGen raw candidate generation 可运行**。artifact 明确标记 `evidence_level=raw`，不代表 semantic-selected、SAPIEN-validated 或 AgentScape pickup verified。
 
 ### 2.5 GPT semantic stage 当前 GATED
 
@@ -131,7 +143,7 @@ part segmentation
 因此：
 
 - P3-SAM core 可以继续产品化；
-- GraspGen raw inference 可以继续实现并验证；
+- GraspGen raw inference 已验证，可作为后续 semantic selection / SAPIEN evaluation 的输入；
 - `partsemantics_annot.py` 真实 E2E 暂时是 GATED；
 - 不允许伪造 `affordance.json` 来让完整 pipeline “变绿”。
 
@@ -142,14 +154,14 @@ part segmentation
 | Image→3D | VERIFIED production | production E2E commit | 迁移到统一 workflow contract |
 | Text→3D | VERIFIED production | production validation commit | 迁移到统一 workflow contract |
 | Retexture | VERIFIED production | production validation commit | artifact/contract 收敛 |
-| Affordance native wheels | VERIFIED | L40S kernel smoke + immutable release | consumer provenance 固化 |
-| P3-SAM segmentation | VERIFIED core E2E | 50k faces / 4 parts / L40S report | compiler-native face-label evidence |
-| GraspGen weights | VERIFIED download | exact revision + bytes + SHA | raw L40S inference |
-| GraspGen raw inference | PLANNED | 当前仅有 pinned weight preloader，无 inference worker | production URDF transform + model run |
+| Affordance native wheels | VERIFIED | L40S kernel smoke + immutable release | 已由 `69c910c` runtime 消费 |
+| P3-SAM segmentation | VERIFIED | 50k faces / 4 parts / L40S report | semantic stage |
+| GraspGen weights | VERIFIED | exact revision + bytes + SHA + runtime load | semantic/eval profiles |
+| GraspGen raw inference | VERIFIED | production URDF transform + 20 raw grasps + finite pose checks | semantic selection / SAPIEN eval |
 | GPT part semantics | GATED | 无 GPT Secret | 配置独立 semantic Secret / endpoint |
 | SAPIEN grasp evaluation | PLANNED | 无 runtime canary | raw grasps + semantic stage |
 | Affordance Job API | PLANNED | 目前是独立 worker | stage contract / job state / artifact roles |
-| AgentScape part evidence import | PLANNED | Compiler 已有 pass | provider-native segmentation evidence bridge |
+| AgentScape part evidence import | VERIFIED core | `671e1ac` BundleAdapter + real 50k-face compile/admission E2E | frozen fixture + transport integration |
 
 ## 4. 执行任务图
 
@@ -164,11 +176,11 @@ part segmentation
                 +-------------+----------------+
                 |                              |
                 v                              v
- [AFF-02 compiler-native labels]        [AFF-03 raw GraspGen]
-  final GLB primitive 对齐              URDF transform + 6DoF
+ [AFF-02 compiler-native labels] ✅     [AFF-03 raw GraspGen] ✅
+  final GLB primitive 对齐 VERIFIED      URDF transform + 6DoF VERIFIED
                 |                              |
                 v                              v
-      [AS-EG-02 Evidence Bridge]        raw grasp evidence
+      [AS-EG-02 Evidence Bridge] ✅     raw grasp evidence
                 |                              |
                 +---------------+--------------+
                                 |
@@ -188,7 +200,7 @@ part segmentation
                   [AFF-06 immutable bundle]
                                 |
                                 v
-                 [AS-EG-03 Compile/Admission]
+                 [AS-EG-03 Compile/Admission] ✅ core
                                 |
                                 v
                    AgentScape provisional/ready
@@ -199,6 +211,8 @@ part segmentation
 ## 5. 下一批具体任务
 
 ### AFF-02：生成 Compiler-native segmentation evidence
+
+> **状态：VERIFIED（2026-08-24）**。实现已进入 `modal-build@69c910c`，真实 production Job 已生成 `agentscape_part_segmentation.v1.json`，并被 AgentScape Compiler materialize 成 4 个 parts、coverage=1。
 
 **目的**：解决当前最重要的数据契约风险——P3-SAM face IDs 是针对 provider source mesh 产生的，AgentScape `SegmentMaterializePass` 要求最终 GLB 每个 primitive 的 `faceLabels` 与 triangle 顺序严格一致。
 
@@ -241,6 +255,8 @@ part segmentation
 6. 编译后 geometry/bounds 不发生数量级漂移。
 
 ### AFF-03：GraspGen raw 6-DoF inference
+
+> **状态：VERIFIED（2026-08-24）**。实现已进入 `modal-build@69c910c`；真实 L40S/production URDF 已输出 top-20 finite 6-DoF grasps，并通过 rotation/score validation。
 
 **目的**：先验证 GraspGen 模型自身，不依赖 GPT 语义筛选。
 
@@ -379,13 +395,13 @@ Job 必须允许 `part-evidence-only` profile，这样 AgentScape 不需要等�
 
 ## 8. 当前立即执行顺序
 
-按当前价值/依赖关系：
+AFF-02、AFF-03 与 AgentScape E-01 core 已解锁并验证。下一阶段按当前价值/依赖关系：
 
-1. **AFF-03 GraspGen raw inference**：继续当前 `modal-build` 工作，不依赖 GPT；
-2. **AFF-02 Compiler-native segmentation evidence**：与 AFF-03 可并行，优先打通 AgentScape part evidence；
-3. **AS-EG-01/02 Bundle Adapter + segmentation transformer**：消费冻结 fixture；
-4. **AS-EG-03 Compiler/Admission E2E**：目标先得到正确的 `provisional`，不是追求 `ready`；
-5. 配置 GPT Secret 后执行 AFF-04；
-6. AFF-05 SAPIEN；
-7. AFF-06 完整 Affordance workflow/API；
-8. semantic/grasp evidence 再逐层进入 AgentScape，不一次性越级。
+1. **AFF-06 part-evidence-only Job/API**：先把已验证 `segment + grasp_raw + finalize` 纳入统一异步 Job/stage contract，不等待 GPT；
+2. **AS-EG-05 frozen fixture E2E**：把真实 provider contract 缩成脱敏、体积受控 fixture，锁住 BundleAdapter→Compiler→Admission 回归；
+3. **AFF-04 semantic worker contract**：先实现 Secret/profile/prompt/provenance 边界；真实 E2E 仍受 GPT Secret Gate；
+4. 配置 GPT Secret 后执行 AFF-04 真实 semantic canary；
+5. **AFF-05 SAPIEN grasp evaluation**：只消费 raw + semantic-selected grasp，不覆盖原始 evidence；
+6. **AS-EG-06 semantic/grasp 增量接入**：semantic / raw / SAPIEN evidence 分层进入 AgentScape；
+7. 最后把完整 Affordance profile 接入 capability registry、Connector/Job transport 与 UI；
+8. 任一 provider evidence 都不得越级变成 AgentScape runtime truth。

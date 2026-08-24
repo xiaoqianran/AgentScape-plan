@@ -4,12 +4,14 @@
 >
 > 本文只定义 EmbodiedGen enriched bundle 如何进入 AgentScape 现有 Compiler / Admission。核心原则：**provider evidence 进入编译器，不直接变成 runtime truth。**
 
+> **2026-08-24 实施状态**：core bridge 已验证。Provider 基线 `modal-build@69c910c`；AgentScape 实现 `671e1ac feat: bridge EmbodiedGen evidence into compiler`。真实 50k-face Bundle 已得到 `materialized` / coverage=1 / 4 parts，并正确保持 `provisional`。
+
 ## 1. 当前 AgentScape 事实
 
 当前代码已经具备：
 
 - `src/compiler/AssetCompiler.js`
-  - `compile({ url, bytes, sourceName, assetId, label, partProposal, partSegmentation })`
+  - `compile({ url, bytes, sourceName, assetId, label, partProposal, partSegmentation, providerEvidence })`
 - `src/compiler/passes/SegmentationEvidencePass.js`
 - `src/compiler/passes/SegmentMaterializePass.js`
 - `src/compiler/passes/PartProposalPass.js`
@@ -82,21 +84,20 @@ materialization.primitives[]:
   faceLabels[]
 ```
 
-### 3.1 当前 provider 输出不能直接无条件映射
+### 3.1 Provider alignment Gate 已实现并验证
 
-当前 P3-SAM runtime 已有：
+`modal-build@69c910c` 已实现该硬 Gate：P3-SAM flat source labels 不直接交给 AgentScape，而是在 provider 端重新解析 primary GLB，先验证 OBJ/GLB vertex identity，再按 triangle vertex-index set 建立 face mapping，最终发布 `agentscape_part_segmentation.v1.json`。
 
-- `face_count`
-- `part_count`
-- `part_face_counts`
-- flat `face_ids[]`
-- `mesh_part_seg.glb`
+真实 production evidence：
 
-但 flat `face_ids[]` 是针对 provider source OBJ face order。Compiler 输入是最终 GLB，其 node / primitive 划分和 triangle order 必须单独证明一致。
+- 50,000 source faces → 50,000 final GLB triangle labels；
+- sourceNode=`geometry_0`；
+- one TRIANGLES primitive；
+- primary GLB SHA=`4990691a19e7abcfd7c67853fb907b55792c133635631105eccdda6f2aae1861`；
+- vertex max abs error ≈ `5e-9`；
+- duplicate/missing/out-of-range mapping 全部 fail closed。
 
-因此硬 Gate：
-
-> provider 必须发布 **与最终 Compiler GLB primitive 顺序对齐** 的 faceLabels artifact；Adapter 不负责猜测或重建对应关系。
+因此 Adapter 继续只做 schema/hash/identity 验证，不负责猜测或重建 face mapping。
 
 ### 3.2 目标转换
 
@@ -142,25 +143,20 @@ Adapter 只做 schema/hash/identity 验证，不修改 labels。
 
 raw GraspGen 与 SAPIEN validated grasp 都不直接对应当前 `PartProposalPass` 的 executable articulation contract。
 
-首版应保存在 provider provenance/evidence，例如：
+当前 `671e1ac` 先保存 **小型 evidence summary + artifact descriptor**，而不把 raw grasp pose 数组内嵌进 Manifest：
 
 ```text
-providerEvidence.affordance.grasps[]
-  partId
-  gripper
-  pose
-  score
-  level = raw | semantic-selected | sapien-validated
-  sourceFrame
-  modelRevision
-  simulationProfile (if any)
+providerEvidence.levels.grasps = raw-provider-only | sapien-validated-provider-only | none
+providerEvidence.artifacts[] = { role, sha256, bytes, mediaType, verified, ... }
 ```
 
-它们可供 UI、后续 interaction planner 或专用 verifier 使用，但不能因为 `sapien-validated` 就直接改变 AgentScape Runtime action truth。
+真实 raw grasp payload 继续由 provider artifact 按 hash 引用。当前真实 provenance summary 约 906 bytes，没有 `faceLabels[]` 或 raw grasp pose 大数组。它们可供 UI、后续 interaction planner 或专用 verifier 使用，但不能因为 `sapien-validated` 就直接改变 AgentScape Runtime action truth。
 
 ## 6. 具体任务
 
 ### AS-EG-01：新增 `EmbodiedGenBundleAdapter`
+
+**状态：VERIFIED — `AgentScape@671e1ac`。**
 
 **仓库**：`AgentScape`
 
@@ -184,6 +180,8 @@ providerEvidence.affordance.grasps[]
 **验收**：坏 hash、未知 schema、缺 primary GLB、segmentation 指向错误 GLB SHA 时全部 fail closed。
 
 ### AS-EG-02：P3-SAM Evidence Transformer
+
+**状态：VERIFIED core — 真实 50k-face provider artifact 已通过 BundleAdapter→AssetCompiler。**
 
 **建议文件**：
 
@@ -211,7 +209,9 @@ providerEvidence.affordance.grasps[]
 
 ### AS-EG-03：Provider Evidence Provenance
 
-当前 `AssetCompiler.compile()` 没有单独的 `providerEvidence` 参数。新增前先确定最小存储边界。
+**状态：VERIFIED — providerEvidence summary 已进入 Manifest provenance，且 Secret/signed URL/path traversal fail closed。**
+
+`671e1ac` 已给 `AssetCompiler.compile()` 增加 `providerEvidence` 参数，并将小型 summary 安全带入 `ManifestPass` provenance。
 
 建议：
 
@@ -230,6 +230,8 @@ providerEvidence.affordance.grasps[]
 
 ### AS-EG-04：Admission reason 分层
 
+**状态：VERIFIED — versioned provider bundle 可得到具体 provisional reasons；legacy admission 行为保持兼容。**
+
 **建议文件**：
 
 - `src/assets/admission.js`
@@ -247,6 +249,8 @@ providerEvidence.affordance.grasps[]
 注意：positive evidence 不必全部变成 admission reason；reason 主要解释为什么 provisional/rejected。名称最终以现有 reason convention 收敛。
 
 ### AS-EG-05：真实 frozen fixture E2E
+
+**状态：PLANNED。真实 production E2E 已手工验证，但脱敏 frozen fixture 尚未提交进测试仓库。**
 
 将一个脱敏、体积受控的真实 provider 输出冻结进测试 fixture：
 
@@ -274,6 +278,8 @@ bundle fixture
 原因可以是 collider/articulation/semantics 未验证。不要为了让测试得到 `ready` 而绕开门禁。
 
 ### AS-EG-06：Semantic / Grasp 增量接入
+
+**状态：PARTIAL。`raw_grasps` role 已可作为 `raw-provider-only` descriptor evidence；payload validation、semantic 与 SAPIEN 层仍待实现。**
 
 等 provider 分别发布：
 
@@ -343,7 +349,28 @@ AgentScape 必须证明：
 - evidence-preserving；
 - 是后续 AgentScape 与 EmbodiedGen 的正式主路径。
 
-## 10. 完成定义
+## 10. 2026-08-24 验证证据
+
+跨仓真实 E2E（非 synthetic fixture）：
+
+- provider：`modal-build@69c910c`；
+- consumer：`AgentScape@671e1ac`；
+- source Job：`job-f82e3eaab6a846e08d32874788495b80`；
+- BundleAdapter 校验 primary GLB + segmentation SHA，raw grasp 保留 descriptor-level evidence；
+- `SegmentMaterializePass.status=materialized`；
+- coverage=`1`；
+- materialized parts=`4`；
+- Compiler hard findings=`0`；
+- final quality=`provisional`；
+- admission reasons 包含 `PART_SEMANTICS_UNVERIFIED`、`PROVIDER_GRASP_RAW_ONLY`；
+- provenance providerEvidence summary≈906 bytes，无大数组；
+- AgentScape split test suite：shard 1/2 = 57 files / 190 tests PASS；shard 2/2 = 57 files / 216 tests PASS；
+- `npm run assets:validate` PASS；
+- `npm run build` PASS。
+
+因此 **Core Evidence Bridge 已验证**；完整阶段收口仍等待 AS-EG-05 frozen fixture、semantic/SAPIEN 增量与正式 Artifact/Job transport。
+
+## 11. 完成定义
 
 第一阶段 Evidence Bridge 完成，不要求完整 GPT/SAPIEN Affordance。必须同时满足：
 

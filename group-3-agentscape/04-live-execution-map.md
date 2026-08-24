@@ -119,7 +119,7 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 | C-02 Capability Adapter | `PLANNED` | 无正式代码 | C-01 |
 | J-01/J-02 Async Job | `PLANNED` | 无正式代码 | Connector contract freeze |
 | A-01/A-02 Artifact | `PLANNED` | 无正式代码 | Job/Artifact contract freeze |
-| E-01 EmbodiedGen part evidence bridge | `PLANNED` | AgentScape Compiler pass 已存在；provider P3-SAM core 已 L40S E2E | provider final-GLB primitive face-label artifact |
+| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@69c910c` + `AgentScape@671e1ac`; real 50k-face Bundle→Compiler→Admission E2E | frozen fixture + Artifact/Job transport |
 
 ### 3.1 AgentScape main
 
@@ -224,19 +224,19 @@ backend stash empty allowlist
 
 ### 3.6 EmbodiedGen Affordance provider evidence
 
-状态：**provider core VERIFIED / AgentScape bridge PLANNED**。
+状态：**provider core VERIFIED / AgentScape bridge VERIFIED_CORE**。
 
-2026-08-24 从 `modal-build` 同步到的真实 provider 事实：
+2026-08-24 已同步到远端 main/master 的真实事实：
 
-- Affordance native CUDA wheels 已在 NVIDIA L40S / SM89 / Torch 2.8.0+cu126 执行 kernel；
-- P3-SAM 已对真实 production Job 完成 50,000 faces 全覆盖 segmentation，输出 4 parts；
-- P3-SAM / Sonata 固定 revision/weight hash，Flash Attention disabled；
-- GraspGen Franka generator/discriminator 权重已固定 revision 与 SHA 并预加载；
-- raw GraspGen inference worker 尚未实现；GPT semantics、SAPIEN eval 也尚未 VERIFIED。
+- `modal-build@69c910c`：Affordance native wheels、P3-SAM segmentation、compiler-native GLB labels、GraspGen raw 6-DoF inference；
+- P3-SAM：真实 production Job 50,000 faces 全覆盖，4 parts；
+- compiler-native evidence：绑定 primary GLB SHA、sourceNode=`geometry_0`、primitive labels 50,000，provider 端显式验证 OBJ↔GLB vertex/triangle identity；
+- GraspGen：真实 production URDF→top-20 raw grasps，score/rotation 均 finite，artifact 明确 `evidence_level=raw`；
+- `AgentScape@671e1ac`：新增 `EmbodiedGenBundleAdapter`、providerEvidence provenance、provider-aware CompileQuality/Admission reasons；
+- 真实 Bundle→Compiler→Admission：`materialized`、coverage=1、4 parts、hard=0、final=`provisional`；
+- raw grasp 未越权提升为 pickup truth；semantic/SAPIEN 仍未 VERIFIED。
 
-AgentScape 当前已经有 `partSegmentation` / `partProposal` Compiler passes，因此 E-01 的 blocker 不是“缺 Compiler”，而是 provider 当前 flat OBJ `face_ids` 尚未证明与 **最终进入 Compiler 的 GLB primitive triangle order** 严格一致。
-
-在 provider 发布 compiler-native primitive labels 以前，AgentScape 不得通过颜色、总 face count 或 node 猜测重建映射。详细跨仓任务见 [`../group-2-embodiedgen/04-live-execution-state.md`](../group-2-embodiedgen/04-live-execution-state.md) 与 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+因此 E-01 的 core contract 已通过。剩余 Gate 是：把真实 contract 冻结成脱敏 fixture，并接入正式 Artifact/Job transport；AgentScape 仍不得通过 provider semantic/grasp 直接构造未经 Runtime 验证的 joint/action truth。详细跨仓任务见 [`../group-2-embodiedgen/04-live-execution-state.md`](../group-2-embodiedgen/04-live-execution-state.md) 与 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
 ## 4. 下一阶段不是“继续加 Runtime primitive”
 
@@ -415,22 +415,25 @@ failed
 
 ### E-01 EmbodiedGen Part Evidence Bridge
 
-**状态：PLANNED；可在 Artifact contract 冻结前先用 frozen fixture 做 Compiler contract test，但正式 transport 依赖 A-01/A-02。**
+**状态：VERIFIED_CORE；正式 transport 仍依赖 A-01/A-02，frozen fixture 仍待提交。**
 
-任务分两段：
+两段 core task 均已完成：
 
-1. provider (`modal-build`) 发布与 final GLB primitives 严格对齐的 `agentscape_part_segmentation.v1` artifact；
-2. AgentScape 新增 `EmbodiedGenBundleAdapter`，机械转换为现有 `AssetCompiler.compile({ partSegmentation })` 输入。
+1. provider (`modal-build@69c910c`) 发布与 final GLB primitives 严格对齐的 `agentscape_part_segmentation.v1` artifact；
+2. AgentScape (`671e1ac`) 新增 `EmbodiedGenBundleAdapter`，机械转换为现有 `AssetCompiler.compile({ partSegmentation, providerEvidence })` 输入。
 
-首个验收目标允许是 `asset-provisional`，只要：
+真实 production Bundle 验收：
 
 - `SegmentationEvidencePass.issues=[]`；
 - `SegmentMaterializePass.materialization.status='materialized'`；
-- provider part count 与 materialized part count 一致；
-- semantic/grasp evidence 未被越权提升为 joint/action truth；
-- legacy `EmbodiedGenAdapter` 保持兼容。
+- coverage=1；
+- provider/materialized part count 均为 4；
+- final quality=`provisional`，hard findings=0；
+- admission 明确包含 `PART_SEMANTICS_UNVERIFIED`、`PROVIDER_GRASP_RAW_ONLY`；
+- semantic/grasp evidence 未越权提升为 joint/action truth；
+- legacy `EmbodiedGenAdapter` 未修改。
 
-详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+下一 Gate：AS-EG-05 frozen fixture + A-01/A-02 Artifact transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 
@@ -603,6 +606,6 @@ AS-14～19：environment/room、offline restore、安全、observability、fault
 6. `WorldRevision` 与 backend stash 是否仍完整、是否已被新 main 语义覆盖？
 7. `WorldRuntime.mutate()` atomicity 是否有新修复或新 caller compensation？
 8. AS-02 的 Connector pairing contract 是否已有跨项目可消费实现。
-9. `modal-build` 是否已经发布 final-GLB primitive-aligned P3-SAM labels，使 E-01 可从 fixture 进入真实 bundle。
+9. E-01 的真实 provider contract 是否已经冻结成脱敏 fixture，并准备好接入 A-01/A-02 Artifact transport。
 
 这九个问题决定下一项任务，不按日期机械推进 AS 编号。
