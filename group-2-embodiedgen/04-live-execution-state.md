@@ -126,7 +126,7 @@ GraspGen 上游 generator / discriminator 已显式 `enable_flash=False`。`69c9
 
 这证明的是 **GraspGen raw candidate generation 可运行**。artifact 明确标记 `evidence_level=raw`，不代表 semantic-selected、SAPIEN-validated 或 AgentScape pickup verified。
 
-### 2.5 GPT semantic stage 当前 GATED
+### 2.5 GPT semantic stage 已真实 E2E
 
 EmbodiedGen 原生完整 Affordance 链：
 
@@ -138,14 +138,27 @@ part segmentation
   -> enriched URDF/bundle
 ```
 
-当前 Modal 只存在 `github` 与 `huggingface` Secret，没有配置语义 worker 所需 GPT endpoint Secret。
+2026-08-24 已配置独立 semantic Secret，并完成真实 OpenAI-compatible vision canary；凭据没有进入仓库、artifact 或日志。
 
-因此：
+`modal-build@be697af` 已实现：
 
-- P3-SAM core 可以继续产品化；
-- GraspGen raw inference 已验证，可作为后续 semantic selection / SAPIEN evaluation 的输入；
-- `partsemantics_annot.py` 真实 E2E 暂时是 GATED；
-- 不允许伪造 `affordance.json` 来让完整 pipeline “变绿”。
+- 独立 CPU/network semantic App；
+- `uv_pip_install` 安装 OpenAI client；
+- semantic input 由 RGB global grid + aligned face-ID mask + isolated part atlas 组成；
+- hidden part 允许 global mask 不可见，但必须在 isolated atlas 中可见；
+- strict part-id / mask-color / graspable / scenarios / functional labels schema；
+- 禁止 joint / axis / limits / actions / pickup_verified 等执行语义字段；
+- GPT failure 可独立 retry，不重跑 P3-SAM/GraspGen。
+
+真实 canary：
+
+- output Job：`job-9cc4e76d87764dbc973ebc1f4f6c5204`；
+- model：`meta/muse-glimmer-30b`；
+- prompt revision：`c2fe6c8c8868270e73443d47ef35b56ec17b0432a2c40f1fd9a5ca9514786621`；
+- 4 parts 全部通过 schema；
+- semantic output SHA：`df4e2ba8f399380496994c61c7acb19cd1aec2f060fb37cb441cb26943501892`；
+- result=`AFFORDANCE_PART_SEMANTICS_OK`；
+- artifact 中没有 endpoint/API key。
 
 ## 3. 当前能力矩阵
 
@@ -158,7 +171,7 @@ part segmentation
 | P3-SAM segmentation | VERIFIED | 50k faces / 4 parts / L40S report | semantic stage |
 | GraspGen weights | VERIFIED | exact revision + bytes + SHA + runtime load | semantic/eval profiles |
 | GraspGen raw inference | VERIFIED | production URDF transform + 20 raw grasps + finite pose checks | semantic selection / SAPIEN eval |
-| GPT part semantics | GATED | 无 GPT Secret | 配置独立 semantic Secret / endpoint |
+| GPT part semantics | VERIFIED | `be697af` + Muse Glimmer 4-part strict-schema canary | bundle/profile integration + SAPIEN |
 | SAPIEN grasp evaluation | PLANNED | 无 runtime canary | raw grasps + semantic stage |
 | Affordance Job API | VERIFIED core | `adf9fcf` derived job `segment→grasp_raw→finalize` + bundle v1 canary | proxy-auth HTTP POST canary + semantic/SAPIEN profiles |
 | AgentScape part evidence import | VERIFIED core | `671e1ac` BundleAdapter + real 50k-face compile/admission E2E | frozen fixture + transport integration |
@@ -184,8 +197,8 @@ part segmentation
                 |                              |
                 +---------------+--------------+
                                 |
-                    [AFF-04 semantic worker]
-                       GPT Secret GATE
+                    [AFF-04 semantic worker] ✅
+                       strict semantic evidence
                                 |
                                 v
                     semantic part proposal
@@ -302,9 +315,7 @@ part segmentation
 
 ### AFF-04：独立 semantic worker
 
-状态：**GATED**。
-
-前置：提供独立 GPT Secret/endpoint，不复用 build/release Secret。
+状态：**VERIFIED（2026-08-24）**。独立 semantic Secret 已配置并完成真实 canary；不复用 build/release Secret。
 
 设计要求：
 
@@ -412,11 +423,10 @@ Job 必须允许 `part-evidence-only` profile，这样 AgentScape 不需要等�
 
 AFF-02、AFF-03 与 AgentScape E-01 core 已解锁并验证。下一阶段按当前价值/依赖关系：
 
-1. **AFF-04 semantic worker contract**：实现独立 CPU/network worker、Secret/profile/prompt/provenance 边界；真实 E2E 仍受 GPT Secret Gate；
-2. **AFF-06 HTTP proxy-auth canary**：仅在已有 proxy secret 可安全取得时执行，不为测试擅自创建长期凭据；
-3. **AS-EG-06 semantic/grasp 增量接入**：等 provider semantic artifact schema 固定后，再增量进入 AgentScape；
-4. 配置 GPT Secret 后执行 AFF-04 真实 semantic canary；
-5. **AFF-05 SAPIEN grasp evaluation**：只消费 raw + semantic-selected grasp，不覆盖原始 evidence；
-6. **AS-EG-06 semantic/grasp 增量接入**：semantic / raw / SAPIEN evidence 分层进入 AgentScape；
+1. **AFF-06 semantic profile/bundle**：把已验证 `part_semantics.v1` 加入 versioned bundle，不覆盖 `part-evidence-only`；
+2. **AS-EG-06 semantic evidence bridge**：把 provider semantic 机械映射成 `partProposal.semantic`，仍不生成 joint/action truth；
+3. **AFF-05 SAPIEN grasp evaluation**：消费 raw + semantic-selected grasp，产出独立 `sapien-validated` evidence；
+4. **AFF-06 HTTP proxy-auth canary**：仅在已有 proxy secret 可安全取得时执行，不为测试擅自创建长期凭据；
+5. semantic/raw/SAPIEN evidence 逐层进入 AgentScape Admission，不一次性越级。
 7. 最后把完整 Affordance profile 接入 capability registry、Connector/Job transport 与 UI；
 8. 任一 provider evidence 都不得越级变成 AgentScape runtime truth。

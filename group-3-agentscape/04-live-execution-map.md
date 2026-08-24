@@ -234,7 +234,8 @@ backend stash empty allowlist
 - GraspGen：真实 production URDF→top-20 raw grasps，score/rotation 均 finite，artifact 明确 `evidence_level=raw`；
 - `AgentScape@671e1ac`：新增 `EmbodiedGenBundleAdapter`、providerEvidence provenance、provider-aware CompileQuality/Admission reasons；
 - 真实 Bundle→Compiler→Admission：`materialized`、coverage=1、4 parts、hard=0、final=`provisional`；
-- raw grasp 未越权提升为 pickup truth；semantic/SAPIEN 仍未 VERIFIED。
+- raw grasp 未越权提升为 pickup truth；
+- provider semantic 已由 `modal-build@be697af` 真实 E2E，Muse Glimmer 4-part strict-schema 输出通过；SAPIEN 仍未 VERIFIED。
 - derived Job `job-a2595a4645f6454cb9d4dbc2b0dff692` 已成功产出 bundle v1，三阶段约 `37.6s / 19.2s / 3.9s`；
 - proxy-auth HTTP route 已部署，但真实带认证 POST 尚未执行。
 
@@ -435,7 +436,7 @@ failed
 - semantic/grasp evidence 未越权提升为 joint/action truth；
 - legacy `EmbodiedGenAdapter` 未修改。
 
-AS-EG-05 frozen fixture 已由 `51bf326` 完成；下一 Gate：A-01/A-02 Artifact transport + semantic evidence。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+AS-EG-05 frozen fixture 已由 `51bf326` 完成；下一 Gate：semantic artifact 进入 bundle/Adapter/PartProposal；随后再做 SAPIEN 与 Artifact transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 

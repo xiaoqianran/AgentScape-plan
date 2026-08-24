@@ -279,11 +279,14 @@ bundle fixture
 
 ### AS-EG-06：Semantic / Grasp 增量接入
 
-**状态：PARTIAL。`raw_grasps` role 已可作为 `raw-provider-only` descriptor evidence；payload validation、semantic 与 SAPIEN 层仍待实现。**
+**状态：PARTIAL。`raw_grasps` role 已可作为 `raw-provider-only` descriptor evidence；provider `part_semantics.v1` 已由 `modal-build@be697af` 真实 E2E，下一步是 Adapter/PartProposal semantic-only 映射；SAPIEN 层仍待实现。**
 
-等 provider 分别发布：
+Provider 已发布并真实验证：
 
-- `part_semantics.v1`
+- `part_semantics.v1`（`modal-build@be697af`，Muse Glimmer strict-schema canary）；
+
+后续仍等待：
+
 - `raw_grasps.*.v1`
 - `sapien_grasps.*.v1`
 
@@ -350,6 +353,16 @@ AgentScape 必须证明：
 - 是后续 AgentScape 与 EmbodiedGen 的正式主路径。
 
 ## 10. 2026-08-24 验证证据
+
+Provider semantic evidence：
+
+- `modal-build@be697af`；
+- semantic input = RGB global grid + aligned nvdiffrast face-ID mask + isolated part atlas；
+- model=`meta/muse-glimmer-30b`；
+- prompt revision=`c2fe6c8c8868270e73443d47ef35b56ec17b0432a2c40f1fd9a5ca9514786621`；
+- semantic output SHA=`df4e2ba8f399380496994c61c7acb19cd1aec2f060fb37cb441cb26943501892`；
+- 4 parts schema-valid，无 joint/action truth，无 Secret/endpoint 泄漏。
+
 
 跨仓真实 E2E（非 synthetic fixture）：
 
