@@ -119,7 +119,7 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 | C-02 Capability Adapter | `PLANNED` | 无正式代码 | C-01 |
 | J-01/J-02 Async Job | `PLANNED` | 无正式代码 | Connector contract freeze |
 | A-01/A-02 Artifact | `PLANNED` | 无正式代码 | Job/Artifact contract freeze |
-| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@adf9fcf` + `AgentScape@671e1ac`; derived bundle v1 + real 50k-face Bundle→Compiler→Admission E2E | frozen fixture + Artifact/Job transport |
+| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@adf9fcf` + `AgentScape@671e1ac`; derived bundle v1 + real 50k-face Bundle→Compiler→Admission E2E | frozen fixture VERIFIED (`51bf326`)；下一 Gate = Artifact/Job transport + semantic evidence |
 
 ### 3.1 AgentScape main
 
@@ -435,7 +435,7 @@ failed
 - semantic/grasp evidence 未越权提升为 joint/action truth；
 - legacy `EmbodiedGenAdapter` 未修改。
 
-下一 Gate：AS-EG-05 frozen fixture + A-01/A-02 Artifact transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+AS-EG-05 frozen fixture 已由 `51bf326` 完成；下一 Gate：A-01/A-02 Artifact transport + semantic evidence。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 

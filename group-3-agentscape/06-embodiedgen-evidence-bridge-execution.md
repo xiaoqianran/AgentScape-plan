@@ -250,7 +250,7 @@ providerEvidence.artifacts[] = { role, sha256, bytes, mediaType, verified, ... }
 
 ### AS-EG-05：真实 frozen fixture E2E
 
-**状态：PLANNED。真实 production E2E 已手工验证，但脱敏 frozen fixture 尚未提交进测试仓库。**
+**状态：VERIFIED — `AgentScape@51bf326` 已提交约 6KB 脱敏 frozen bundle v1 fixture + generator + E2E regression test。**
 
 将一个脱敏、体积受控的真实 provider 输出冻结进测试 fixture：
 
@@ -370,6 +370,7 @@ AgentScape 必须证明：
 - AgentScape split test suite：shard 1/2 = 57 files / 190 tests PASS；shard 2/2 = 57 files / 216 tests PASS；
 - `npm run assets:validate` PASS；
 - `npm run build` PASS。
+- frozen fixture：`AgentScape@51bf326`，118 test files / 436 tests（split shards）PASS，`assets:validate` PASS，production build PASS。
 
 因此 **Core Evidence Bridge 已验证**；完整阶段收口仍等待 AS-EG-05 frozen fixture、semantic/SAPIEN 增量与正式 Artifact/Job transport。
 

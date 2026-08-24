@@ -412,9 +412,9 @@ Job 必须允许 `part-evidence-only` profile，这样 AgentScape 不需要等�
 
 AFF-02、AFF-03 与 AgentScape E-01 core 已解锁并验证。下一阶段按当前价值/依赖关系：
 
-1. **AS-EG-05 frozen fixture E2E**：把真实 provider contract 缩成脱敏、体积受控 fixture，锁住 BundleAdapter→Compiler→Admission 回归；
+1. **AFF-04 semantic worker contract**：实现独立 CPU/network worker、Secret/profile/prompt/provenance 边界；真实 E2E 仍受 GPT Secret Gate；
 2. **AFF-06 HTTP proxy-auth canary**：仅在已有 proxy secret 可安全取得时执行，不为测试擅自创建长期凭据；
-3. **AFF-04 semantic worker contract**：先实现 Secret/profile/prompt/provenance 边界；真实 E2E 仍受 GPT Secret Gate；
+3. **AS-EG-06 semantic/grasp 增量接入**：等 provider semantic artifact schema 固定后，再增量进入 AgentScape；
 4. 配置 GPT Secret 后执行 AFF-04 真实 semantic canary；
 5. **AFF-05 SAPIEN grasp evaluation**：只消费 raw + semantic-selected grasp，不覆盖原始 evidence；
 6. **AS-EG-06 semantic/grasp 增量接入**：semantic / raw / SAPIEN evidence 分层进入 AgentScape；
