@@ -21,12 +21,14 @@
    - [`group-2-embodiedgen/01-modal-build-plan.md`](./group-2-embodiedgen/01-modal-build-plan.md)
    - [`group-2-embodiedgen/02-EmbodiedGen-readonly-stage-map.md`](./group-2-embodiedgen/02-EmbodiedGen-readonly-stage-map.md)
    - [`group-2-embodiedgen/03-workflow-contract-and-acceptance.md`](./group-2-embodiedgen/03-workflow-contract-and-acceptance.md)
+   - [`group-2-embodiedgen/04-live-execution-state.md`](./group-2-embodiedgen/04-live-execution-state.md)：实时事实、下一任务、验证 Gate；每次实际开发/Modal 验证后优先同步这里。
 6. 第三组：`AgentScape`
    - [`group-3-agentscape/01-AgentScape-integration-plan.md`](./group-3-agentscape/01-AgentScape-integration-plan.md)
    - [`group-3-agentscape/02-provider-artifact-world-contract.md`](./group-3-agentscape/02-provider-artifact-world-contract.md)
    - [`group-3-agentscape/03-dual-generation-strategy-plan.md`](./group-3-agentscape/03-dual-generation-strategy-plan.md)
    - [`group-3-agentscape/04-live-execution-map.md`](./group-3-agentscape/04-live-execution-map.md)：动态实现账本、下一任务切片、依赖 Gate 与并行 ownership；实施 AgentScape 前优先读取。
    - [`group-3-agentscape/05-execution-task-spec-template.md`](./group-3-agentscape/05-execution-task-spec-template.md)：把 Live Map 中的一个切片固化成可独立交付、可验收的 AI/开发任务。
+   - [`group-3-agentscape/06-embodiedgen-evidence-bridge-execution.md`](./group-3-agentscape/06-embodiedgen-evidence-bridge-execution.md)：EmbodiedGen P3-SAM / semantic / grasp evidence 进入现有 Compiler/Admission 的文件级执行计划。
 7. 跨项目治理与落地顺序
    - [`cross-cutting/01-master-contracts.md`](./cross-cutting/01-master-contracts.md)
    - [`cross-cutting/02-milestones-testing-risks-rollout.md`](./cross-cutting/02-milestones-testing-risks-rollout.md)

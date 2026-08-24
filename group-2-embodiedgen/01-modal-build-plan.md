@@ -378,6 +378,8 @@ embodiedgen/jobs/<job-id>/
 
 ### MB-10：`asset.affordance` 适配
 
+> 2026-08-24 实时状态：native CUDA wheels 已在 L40S/SM89 实跑；P3-SAM 已对真实 production Job 完成 50,000 faces / 4 parts E2E；GraspGen Franka 权重已固定 revision 与 SHA 并预加载。当前未完成项是 raw GraspGen inference、GPT semantic、SAPIEN evaluation、统一 Job/API，以及 AgentScape compiler-native face-label bridge。执行细节与证据以 [`04-live-execution-state.md`](./04-live-execution-state.md) 为准。
+
 按上游依赖拆阶段：
 
 1. URDF/bundle ingest；

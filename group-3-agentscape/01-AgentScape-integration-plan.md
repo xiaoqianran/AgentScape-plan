@@ -295,6 +295,8 @@ AgentScape 通过统一客户端 Connector 创建 parent pipeline：
 
 ### AS-06：EmbodiedGen Asset Bundle Adapter
 
+> 2026-08-24 实现校正：AgentScape 当前已经有 `AssetCompiler.compile({ partProposal, partSegmentation })`、`SegmentationEvidencePass`、`SegmentMaterializePass` 与 `PartProposalPass`。因此这里不应再设计第二套 evidence compiler。正式任务是新增 versioned `EmbodiedGenBundleAdapter`，把 provider bundle 转成现有 Compiler input；旧 `EmbodiedGenAdapter.toManifest()` 仅保留 legacy provisional 兼容。文件级执行计划见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+
 输入不再是松散 `glb_url`，而是：GLB、URDF、collision、validation、lineage、可选 part/affordance evidence。
 
 Adapter 计划：

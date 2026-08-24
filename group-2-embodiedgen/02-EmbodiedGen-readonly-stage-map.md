@@ -39,9 +39,9 @@ Asset/World → SAPIEN/Genesis/other simulator → validation/training（后置�
 |---|---|---|---|---|---|
 | Image→3D | `scripts/imageto3d.py` | image、backend、retry/options | GLB/OBJ/texture/collision/GS/URDF/video | 已适配 SAM3D 路径 | P0 |
 | Text→3D | `scripts/textto3d.py` | prompt、backend、seeds/retries | generated image + Image→3D bundle | 已适配 Kolors→SAM3D 路径 | P0 |
-| Texture | `scripts/gen_texture.py` | mesh + prompt + seed | textured GLB/OBJ/texture/multiview/video | 部分适配：实验性 Worker/派生 Job，生产门未过 | P1 |
+| Texture | `scripts/gen_texture.py` | mesh + prompt + seed | textured GLB/OBJ/texture/multiview/video | 已完成 Retexture production validation；仍需统一 artifact/workflow contract | P1 |
 | Convert | `data/asset_converter.py` | URDF/mesh + target simulator | MJCF/USD/URDF variants | 待适配 | P1 |
-| Affordance | `scripts/affordance_annot/*` | URDF visual/collision bundle | part GLB、semantic/grasp JSON、updated URDF | 待适配 | P1 |
+| Affordance | `scripts/affordance_annot/*` | URDF visual/collision bundle | part GLB、semantic/grasp JSON、updated URDF | 部分适配：P3-SAM core 已 L40S E2E；GraspGen weights 已固定；semantic/eval/API 待完成 | P1 |
 | Background scene | `scripts/gen_scene3d.py` | prompt、seed、GS config | pano、mesh PLY、GS PLY/config、video | 待适配 | P2 |
 | Layout | `scripts/gen_layout.py` + `compose_layout.py` | task、background list、retry/robot | layout.json、多资产、background、preview | 待适配 | P2 |
 | Room/house | `scripts/room_gen/gen_room.py` | prompt/config、seed、complexity | Blender、room URDF/per-instance mesh、USD/textures | 待适配 | P3 |
@@ -227,7 +227,27 @@ AgentScape 的 `generateAsset(prompt)` 首版映射此 workflow；结果仍必�
 - `affordance_annot.json`，包含 part name、graspable、scenario/confidence、functional labels、description、grasp poses；
 - 指向这些文件的更新后 URDF。
 
-### 8.4 Evidence 分级
+### 8.4 当前 `modal-build` 实现事实（2026-08-24）
+
+当前已经真实验证：
+
+- Affordance native CUDA wheels 在 NVIDIA L40S / SM89 / Torch 2.8.0+cu126 执行成功；
+- P3-SAM / Sonata 使用固定 revision/weight hash、离线加载、Flash Attention disabled；
+- production Job `job-f82e3eaab6a846e08d32874788495b80` 完成 50,000 faces 全覆盖 segmentation，得到 4 个 parts；
+- `mesh_part_seg.glb`、`part_segmentation.json`、`validation_report.json` 已写入 job artifact；
+- GraspGen Franka generator/discriminator 已固定 revision、下载并记录 SHA。
+
+当前尚未证明：
+
+- P3-SAM flat OBJ face IDs 与 AgentScape 最终 Compiler GLB primitive face order 的严格一致性；
+- GraspGen raw 6-DoF inference 在 production URDF transform 下真实成功；
+- GPT part semantics；
+- SAPIEN grasp evaluation；
+- 完整 `asset.affordance` Job/API/bundle contract。
+
+因此当前能力应标记为 **part-evidence core VERIFIED / full affordance UNVERIFIED**。实时任务见 [`04-live-execution-state.md`](./04-live-execution-state.md)。
+
+### 8.5 Evidence 分级
 
 | Evidence | 可支持的结论 | 不可支持的结论 |
 |---|---|---|
