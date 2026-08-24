@@ -10,13 +10,17 @@
 
 | 仓库 | 当前 HEAD | 事实 |
 |---|---|---|
-| `modal-3D` | `805da24` | 4 个活动 Generation Worker + Cloud SAM 3.1；Gateway 已统一为私有 `generate(input_path, options)` 路由；共享 artifact Volume 刷新问题已修复并记录 |
-| `modal-3D-client` | `3ca937e` | Project Workspace、Cloud/Local/Auto SAM、四模型 UI/Viewer、原生 GLB 导出、Local SAM v1 完整生命周期，以及 recoverable Durable Job 状态机已落地 |
-| `AgentScape-plan` | 更新本文件前 `f6b995a` | 第一组已有动态 tracker；本次同步 P0-A Durable Job correctness 的真实完成证据 |
+| `modal-3D` | `5fb839b` | 4 个活动 Generation Worker + Cloud SAM 3.1；`modal-3d.capabilities.v1` 已上线；Gateway Worker 路由与 option 校验均消费同一 capability contract |
+| `modal-3D-client` | `d436eb7` | Durable Job、Project Workspace、Cloud/Local/Auto SAM、原生 GLB 导出已落地；模型/profile/status/warm reference 已改为云端 capability 驱动并带 last-known-good cache |
+| `AgentScape-plan` | 更新本文件前 `9f9fc24` | 第一组动态 tracker 已存在；本次同步 P0-B capability 单一事实源的真实完成证据 |
 
 已验证证据：
 
-- `modal-3D-client` HEAD `3ca937e` 的 GitHub Windows run `32695629317`：completed / success；
+- `modal-3D-client` HEAD `d436eb7` 的 GitHub Windows run `32697639923`：completed / success；
+- `modal-3D` commit `5fb839b`：新增 `modal-3d.capabilities.v1` 与 11 个纯 CPU contract tests；
+- `modal-3d-gateway` 已重新部署并通过真实 Modal SDK `capabilities()` canary；4 个模型顺序、recommended profile、SAM operations 均与 contract 一致；
+- Gateway 真实负向 canary：Pixal3D 未声明的 `texture_size` 在 CPU router 层被拒绝，未进入 Worker spawn；
+- `modal-3D-client` 已有 23 个 Python unit/lifecycle tests；真实 canary 验证 remote capability -> 原子 cache -> 主动断开 Modal -> last-known-good cache 仍可投影四模型/profile options；
 - Windows CI 已覆盖 frontend、PyInstaller Agent smoke、Tauri、NSIS installer 与 installer upload；
 - Durable Job P0-A 已有 14 个 Python unit/lifecycle tests，并在 Windows CI 的 Python Agent 步骤中执行；
 - 真实 Modal CPU cancel canary：`cancel_requested -> cancelled`，以及“远端已先完成 + 随后 cancel -> succeeded”两种 race 均通过；
@@ -32,8 +36,8 @@
 
 这些事实直接决定下一阶段优先级：
 
-1. `modal-3D-client/agent/models.py` 仍硬编码 4 个模型、profile 和历史 warm time；client 还没有从云端 capability 得到模型事实。
-2. `modal-3D/modal_3d/gateway.py` 当前只返回 `call_id + model`，没有 `modal-3d.capabilities.v1`、request envelope、idempotency、input descriptor。
+1. `modal-3D-client/agent/models.py` 已不再保存任何具体模型事实；它现在只负责 `modal-3d.capabilities.v1` 校验、last-known-good cache、UI projection 与 profile 展开。React 默认模型也不再写死具体 model ID。
+2. `modal-3D/modal_3d/gateway.py` 已提供 `modal-3d.capabilities.v1`，并由同一 contract 驱动 Worker 路由与 options 校验；`submit()` 仍只返回 `call_id + model`，尚缺 request envelope、idempotency 与 input descriptor。
 3. `modal-3D/modal_3d/common.py::generation_result()` 已统一外层 result shape，但 artifact 只有 `path/bytes/mime`，没有 hash、opaque ID、producer/revision/validation manifest。
 4. `agent/jobs.py` 已完成 Durable Job correctness slice：DB `user_version=1` migration，状态含 `running/connection_required/cancel_requested/succeeded/failed/cancelled/expired`，并暴露 stable `error_code/retryable/updated_at`；临时认证/网络/Modal service 错误不再 terminal failed。仍未完成的是 stage/event log、artifact relation 和 submit idempotency。
 5. `agent/artifacts.py` 已有安全 relative path、内容寻址上传与 SHA-256，但 read API 仍以 Volume path 为身份，没有 job-scoped opaque artifact ID。
@@ -84,9 +88,9 @@ P0-A Job 正确性
 | 工作包 | 状态 | 当前证据 | 下一缺口 |
 |---|---|---|---|
 | M3D-00 部署与事实审计 | PARTIAL | 4 Worker/SAM 文档、benchmark、archive trellis.cpp、统一 Gateway 名称 | 机器可读 deployment matrix + 自动 `from_name()` smoke + canary 输入清单 |
-| M3D-01 单一能力清单 | TODO | `ModelName`/`WORKERS` 是当前事实，但不是 capability contract | 实现 `modal-3d.capabilities.v1`；模型/profile/input/output/option/status/revision 一处定义 |
+| M3D-01 单一能力清单 | DONE | `modal-3d.capabilities.v1` 已上线：model/profile/input/output/status/options/deployment revision/reference performance/SAM cloud capability 一处定义 | 后续仅随 contract version 演进，不再另建 registry |
 | M3D-02 输入契约与内容寻址 | PARTIAL | Worker adapter 已接统一 relative artifact path；client upload 已内容寻址 | Gateway CPU 层 input descriptor、prefix allowlist、MIME/pixels/alpha/hash/limits |
-| M3D-03 统一 option 校验 | PARTIAL | client profile 已限制常用 options；各 worker 内部也有部分校验 | Gateway 按 capability schema 严格校验；未知字段/类型/范围在占 GPU 前失败 |
+| M3D-03 统一 option 校验 | DONE | Gateway 直接消费 capability option schema；未知字段/类型与 Worker 已有显式 range 在 CPU 层校验，真实负向 canary 已证明 pre-spawn fail | future option 只能先进入 capability schema，再进入 Worker |
 | M3D-04 统一 Job Envelope | TODO | submit 仅 `call_id + model` | request_id/idempotency/input/effective options/revision/submitted_at |
 | M3D-05 Result/Artifact Manifest | PARTIAL | `generation_result()` 已统一 model/artifact/timing/metrics | artifact hash + opaque ID + validation + lineage + sidecar manifest |
 | M3D-06 Worker 收敛 | PARTIAL | 四 Worker 已统一顶层 `generate(input_path, options)`；真实矩阵通过 | 共享 input/result/error helper、结构校验、统一错误类别；不做大爆炸重构 |
@@ -113,10 +117,10 @@ P0-A Job 正确性
 | 工作包 | 状态 | 当前证据 | 下一缺口 |
 |---|---|---|---|
 | C3D-00 基线/smoke | DONE | Windows CI、PyInstaller smoke、四模型真实矩阵、Project e2e | 只随契约变化扩 smoke，不重做基线 |
-| C3D-01 云端 capability | TODO | `/v1/models` 仍来自 `agent/models.py` | 消费 M3D capability，缓存/兼容判断，移除硬编码事实 |
+| C3D-01 云端 capability | DONE | Agent 远端读取 v1、严格 major compatibility、原子 last-known-good cache；`/v1/models` 只是 projection；运行时代码已无具体 model ID/name/profile/warm hardcode | 后续只处理 contract version migration |
 | C3D-02 本地输入管线 | TODO | Project source 已持久化 | magic/bytes/pixels/EXIF/alpha/hash；limits 来自 capability，不另写一套数字 |
 | C3D-03 SAM provider | PARTIAL | Cloud/Local/Auto、refine、Local install/update/uninstall 已完成 | direct RGBA `skip`、provider selection/recovery contract；Windows+NVIDIA 实机证据 |
-| C3D-04 模型/profile/options | PARTIAL | recommended profiles 可真实提交四模型 | profile 由 capability 驱动；advanced schema 以后再做 |
+| C3D-04 模型/profile/options | PARTIAL | model/status/profile/options 全由 capability 驱动；新增 model ID 无需 client registry 改动；disabled model 无法提交 | advanced schema/UI 以后再做，不阻塞当前主线 |
 | C3D-05 Durable Job Store v1 | PARTIAL | SQLite + remote call ID + restart restore + DB v1 migration + `updated_at/error_code/retryable` 已完成 | stage/event log、artifact relation、后续 DB compatibility/backup Gate |
 | C3D-06 恢复/取消/重试/幂等 | PARTIAL | transient/auth/network 可恢复；`cancel_requested` + cancel race 已验证；真实 reconnect 保留同一 remote call | submit idempotency、event/retry policy、更多故障注入 |
 | C3D-07 Artifact Cache/Workspace | PARTIAL | Project SQLite、source、native export、Local SAM data 生命周期 | verified content-addressed result cache、opaque artifact ID、远端 expiry 后仍可打开 |
@@ -196,7 +200,7 @@ running -> cancel_requested -> cancelled OR succeeded (cancel race)
 
 **禁止顺手做**：完整 Job events UI、SSE、Connector、React reducer 大重构。
 
-### P0-B：`modal-3d.capabilities.v1` 单一事实源
+### P0-B：`modal-3d.capabilities.v1` 单一事实源 ✅ DONE (2026-08-24)
 
 对应：M3D-01/M3D-03/C3D-01/C3D-04。
 
@@ -229,12 +233,17 @@ v1 至少包含：
 4. 保留短兼容窗口；
 5. 最后删除 `agent/models.py` 里的模型事实，不要求删除 projection helper 本身。
 
-验收：
+验收证据：
 
-- 新增/禁用一个 model 只改 backend capability，client 无需重新编译即可正确展示状态；
-- client 遇到 incompatible major 不猜字段、不提交；
-- schema snapshot/fixture 双仓库共享一组例子；
-- 4 个 current model recommended profile 与现有真实矩阵保持一致。
+- backend commit：`5fb839b feat: add generation capability contract`；11 个纯 CPU capability tests 全绿；
+- Gateway deploy 成功；真实 `Function.from_name("modal-3d-gateway", "capabilities")` 返回 `modal-3d.capabilities.v1`；
+- 真实负向调用证明 unknown option 在 Worker spawn 前被拒绝；
+- client commit：`d436eb7 feat: consume cloud generation capabilities`；Windows run `32697639923` 全绿；
+- client 当前 23 个 tests，包括 remote->cache、offline cache、incompatible major no-fallback、disabled model、duplicate model/profile、新 model ID 无 client registry 改动等；
+- 4 个 current model recommended profile 与此前真实四模型矩阵一致；
+- React 已移除默认具体 model ID，历史 Project 指向已删除 model 时不会静默切到第一个模型。
+
+关于原计划“schema snapshot/fixture 双仓库共享一组例子”：本 slice 不额外引入第三个 contract package。后端用 canonical contract tests，客户端保留 v1 fixture，并通过真实 remote canary 验证两端；若 P0-C 后需要长期共享 JSON examples，再把 example 放到联合 contract fixtures，而不是现在制造新发布单元。
 
 ### P0-C：Input + Result + Artifact identity
 
@@ -373,6 +382,6 @@ Done 必须至少有与任务匹配的证据：unit/contract、packaged Windows 
 
 ## 8. 下一次执行入口
 
-下一次继续第一组，不重新讨论 Durable Job 架构，直接从 **P0-B `modal-3d.capabilities.v1` 单一事实源** 开始。
+下一次继续第一组，直接进入 **P0-C Input + Result + Artifact identity**。
 
-第一条执行原则：先在 `modal-3D` 上线机器可读 capability contract，并用纯 CPU contract tests 固定 schema；再让 client 消费 capability、投影 `/v1/models`，最后删除 `agent/models.py` 中重复的模型事实。不要先改 React UI，也不要把 capability 变成另一个复杂 registry framework。
+第一条执行原则：先定义最小 `InputDescriptor / ArtifactDescriptor`，并让 backend result 产生 bytes + SHA256 + producer/revision；再迁移 Agent DB/API 到 opaque artifact ID。不要先做 verified local cache，也不要先改 Connector——P0-D 依赖 P0-C 的稳定 artifact identity。
