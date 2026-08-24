@@ -160,6 +160,20 @@ part segmentation
 - result=`AFFORDANCE_PART_SEMANTICS_OK`；
 - artifact 中没有 endpoint/API key。
 
+`modal-build@eda84b7` 又把 semantic stage 纳入正式 `semantic-evidence-v1` derived Job profile。真实 Job `job-822cd13c76e34962aab13412d3a89397` 已完整执行：
+
+- segment `47.586s`；
+- grasp_raw `21.582s`；
+- semantic_inputs `20.749s`；
+- semantic_annotate `45.155s`；
+- finalize `6.607s`；
+- 本次 P3-SAM 输出 5 parts，semantic 输出也严格覆盖 5 IDs；
+- bundle roles=`primary_glb/source_urdf/part_segmentation/raw_grasps/part_semantics`；
+- result=`AFFORDANCE_SEMANTIC_EVIDENCE_BUNDLE_OK`；
+- `part_semantics` descriptor SHA 与 semantic validation SHA 均独立复算匹配。
+
+这也证明实现没有写死 4-part 假设；不同 P3-SAM canary 的 part count 可以变化，但 bundle/semantic consumer 必须按当次 segmentation ID 集合精确对齐。
+
 ## 3. 当前能力矩阵
 
 | 能力 | 当前状态 | 已有证据 | 下一个 Gate |
@@ -171,10 +185,10 @@ part segmentation
 | P3-SAM segmentation | VERIFIED | 50k faces / 4 parts / L40S report | semantic stage |
 | GraspGen weights | VERIFIED | exact revision + bytes + SHA + runtime load | semantic/eval profiles |
 | GraspGen raw inference | VERIFIED | production URDF transform + 20 raw grasps + finite pose checks | semantic selection / SAPIEN eval |
-| GPT part semantics | VERIFIED | `be697af` + Muse Glimmer 4-part strict-schema canary | bundle/profile integration + SAPIEN |
+| GPT part semantics | VERIFIED | `be697af` + Muse Glimmer strict-schema canary | SAPIEN eval |
 | SAPIEN grasp evaluation | PLANNED | 无 runtime canary | raw grasps + semantic stage |
-| Affordance Job API | VERIFIED core | `adf9fcf` derived job `segment→grasp_raw→finalize` + bundle v1 canary | proxy-auth HTTP POST canary + semantic/SAPIEN profiles |
-| AgentScape part evidence import | VERIFIED core | `671e1ac` BundleAdapter + real 50k-face compile/admission E2E | frozen fixture + transport integration |
+| Affordance Job API | VERIFIED semantic profile | `eda84b7` five-stage `semantic-evidence-v1` canary | SAPIEN profile + proxy-auth HTTP POST canary |
+| AgentScape part evidence import | VERIFIED semantic bridge | `d28980d` real semantic bundle→Compiler→Admission E2E + frozen semantic fixture | SAPIEN + transport integration |
 
 ## 4. 执行任务图
 
@@ -423,10 +437,9 @@ Job 必须允许 `part-evidence-only` profile，这样 AgentScape 不需要等�
 
 AFF-02、AFF-03 与 AgentScape E-01 core 已解锁并验证。下一阶段按当前价值/依赖关系：
 
-1. **AFF-06 semantic profile/bundle**：把已验证 `part_semantics.v1` 加入 versioned bundle，不覆盖 `part-evidence-only`；
-2. **AS-EG-06 semantic evidence bridge**：把 provider semantic 机械映射成 `partProposal.semantic`，仍不生成 joint/action truth；
-3. **AFF-05 SAPIEN grasp evaluation**：消费 raw + semantic-selected grasp，产出独立 `sapien-validated` evidence；
+1. **AFF-05 SAPIEN grasp evaluation**：消费 raw grasp + verified semantic evidence，产出独立 `sapien_grasps.*.v1`；
+2. **AS-EG-06 SAPIEN evidence bridge**：验证 `sapien_grasps` bytes/schema/profile，只升级 provider evidence，不升级 AgentScape pickup truth；
+3. **AFF-06 SAPIEN profile/bundle**：在 `semantic-evidence-v1` 之上增加 simulator-eval stage，不破坏旧 profiles；
 4. **AFF-06 HTTP proxy-auth canary**：仅在已有 proxy secret 可安全取得时执行，不为测试擅自创建长期凭据；
-5. semantic/raw/SAPIEN evidence 逐层进入 AgentScape Admission，不一次性越级。
-7. 最后把完整 Affordance profile 接入 capability registry、Connector/Job transport 与 UI；
-8. 任一 provider evidence 都不得越级变成 AgentScape runtime truth。
+5. 把完整 Affordance profiles 接入 capability registry、Connector/Job transport 与 UI；
+6. 任一 provider evidence 都不得越级变成 AgentScape runtime truth。

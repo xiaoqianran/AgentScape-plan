@@ -279,15 +279,19 @@ bundle fixture
 
 ### AS-EG-06：Semantic / Grasp 增量接入
 
-**状态：PARTIAL。`raw_grasps` role 已可作为 `raw-provider-only` descriptor evidence；provider `part_semantics.v1` 已由 `modal-build@be697af` 真实 E2E，下一步是 Adapter/PartProposal semantic-only 映射；SAPIEN 层仍待实现。**
+**状态：PARTIAL（semantic 已 VERIFIED / SAPIEN 待实现）。`raw_grasps` 已验证；`part_semantics` 已由 `modal-build@eda84b7` 纳入正式 semantic profile，并由 `AgentScape@d28980d` 映射成 semantic-only Part Proposal；SAPIEN 层仍待实现。**
 
 Provider 已发布并真实验证：
 
 - `part_semantics.v1`（`modal-build@be697af`，Muse Glimmer strict-schema canary）；
 
+已消费：
+
+- `raw_grasps.*.v1` → `raw-provider-only`；
+- `part_semantics.v1` → `provider-verified` + semantic-only `partProposal`，无 joint/action promotion。
+
 后续仍等待：
 
-- `raw_grasps.*.v1`
 - `sapien_grasps.*.v1`
 
 再逐层扩 Adapter。每增加一层必须有独立 fixture 和 admission expectation。
@@ -362,6 +366,10 @@ Provider semantic evidence：
 - prompt revision=`c2fe6c8c8868270e73443d47ef35b56ec17b0432a2c40f1fd9a5ca9514786621`；
 - semantic output SHA=`df4e2ba8f399380496994c61c7acb19cd1aec2f060fb37cb441cb26943501892`；
 - 4 parts schema-valid，无 joint/action truth，无 Secret/endpoint 泄漏。
+- `modal-build@eda84b7`：`semantic-evidence-v1` 五阶段 derived Job `job-822cd13c76e34962aab13412d3a89397` 成功，最新 segmentation/semantic 为 5 parts；
+- `AgentScape@d28980d`：真实 5-part bundle 得到 `provider-verified` semantics、5 materialized parts、coverage=1、`promoted=[]`、manifest actions=`[move]`、final=`provisional`；
+- AgentScape full gate：134 test files / 581 tests（split shards）PASS，`assets:validate` PASS，production build PASS；
+- semantic frozen fixture 已加入现有约 10KB 级 fixture 目录，锁定 semantic-evidence-v1 contract。
 
 
 跨仓真实 E2E（非 synthetic fixture）：
@@ -385,7 +393,7 @@ Provider semantic evidence：
 - `npm run build` PASS。
 - frozen fixture：`AgentScape@51bf326`，118 test files / 436 tests（split shards）PASS，`assets:validate` PASS，production build PASS。
 
-因此 **Core Evidence Bridge 已验证**；完整阶段收口仍等待 AS-EG-05 frozen fixture、semantic/SAPIEN 增量与正式 Artifact/Job transport。
+因此 **Segmentation + raw grasp + semantic Evidence Bridge 已验证**；完整阶段收口现在只剩 SAPIEN 增量与正式 Artifact/Job transport。
 
 ## 11. 完成定义
 

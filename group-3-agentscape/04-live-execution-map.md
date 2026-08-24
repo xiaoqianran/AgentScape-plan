@@ -224,20 +224,21 @@ backend stash empty allowlist
 
 ### 3.6 EmbodiedGen Affordance provider evidence
 
-状态：**provider core VERIFIED / AgentScape bridge VERIFIED_CORE**。
+状态：**provider semantic profile VERIFIED / AgentScape semantic bridge VERIFIED**。
 
 2026-08-24 已同步到远端 main/master 的真实事实：
 
-- `modal-build@adf9fcf`：Affordance native wheels、P3-SAM segmentation、compiler-native GLB labels、GraspGen raw 6-DoF inference，以及 `part-evidence-only` derived Job/API；
+- `modal-build@eda84b7`：`part-evidence-only` 与 `semantic-evidence-v1` 两个 derived Job profiles 均已真实 E2E；
 - P3-SAM：真实 production Job 50,000 faces 全覆盖，4 parts；
 - compiler-native evidence：绑定 primary GLB SHA、sourceNode=`geometry_0`、primitive labels 50,000，provider 端显式验证 OBJ↔GLB vertex/triangle identity；
 - GraspGen：真实 production URDF→top-20 raw grasps，score/rotation 均 finite，artifact 明确 `evidence_level=raw`；
 - `AgentScape@671e1ac`：新增 `EmbodiedGenBundleAdapter`、providerEvidence provenance、provider-aware CompileQuality/Admission reasons；
 - 真实 Bundle→Compiler→Admission：`materialized`、coverage=1、4 parts、hard=0、final=`provisional`；
 - raw grasp 未越权提升为 pickup truth；
-- provider semantic 已由 `modal-build@be697af` 真实 E2E，Muse Glimmer 4-part strict-schema 输出通过；SAPIEN 仍未 VERIFIED。
+- provider semantic 已由 `modal-build@be697af` 真实 E2E；`eda84b7` 已把它纳入完整 semantic profile，最新 canary 为 5 parts；SAPIEN 仍未 VERIFIED。
 - derived Job `job-a2595a4645f6454cb9d4dbc2b0dff692` 已成功产出 bundle v1，三阶段约 `37.6s / 19.2s / 3.9s`；
 - proxy-auth HTTP route 已部署，但真实带认证 POST 尚未执行。
+- `AgentScape@d28980d` 已验证真实 5-part semantic bundle：`partSemantics=provider-verified`、coverage=1、5 parts materialized、`promoted=[]`、manifest actions 仅 `move`、final=`provisional`。
 
 因此 E-01 的 core contract 已通过。剩余 Gate 是：把真实 contract 冻结成脱敏 fixture，并接入正式 Artifact/Job transport；AgentScape 仍不得通过 provider semantic/grasp 直接构造未经 Runtime 验证的 joint/action truth。详细跨仓任务见 [`../group-2-embodiedgen/04-live-execution-state.md`](../group-2-embodiedgen/04-live-execution-state.md) 与 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
@@ -436,7 +437,7 @@ failed
 - semantic/grasp evidence 未越权提升为 joint/action truth；
 - legacy `EmbodiedGenAdapter` 未修改。
 
-AS-EG-05 frozen fixture 已由 `51bf326` 完成；下一 Gate：semantic artifact 进入 bundle/Adapter/PartProposal；随后再做 SAPIEN 与 Artifact transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+AS-EG-05 base fixture 与 semantic fixture 都已完成；semantic bridge 已由 `d28980d` 验证。下一 Gate：SAPIEN evidence + Artifact/Job transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 
