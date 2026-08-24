@@ -6,8 +6,9 @@
 Task ID:        J-01
 Parent Plan:    AS-03 / Gate L3
 Owner Track:    Connector / Job
-Status:         READY
-Base Commit:    47470c0
+Status:         MERGED
+Base Commit:    51bf326
+Final Commit:   6a08f31
 Feature Branch: feat/j01-async-job-state
 ```
 
@@ -244,3 +245,32 @@ Before merge:
 - production build PASS;
 - no changes to Physics/Interaction/WorldRuntime required;
 - no Artifact readiness semantics introduced prematurely.
+
+## 14. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       6a08f31 feat: add async generation job projection
+Merged into main:   yes
+Focused after rebase: 8 files / 58 tests PASS
+Full JS regression before final rebase: 120 files / 455 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 10.09s)
+Python smoke:       4/4 PASS
+GitHub Actions run: 32700383739
+Test and build:     success
+Pages deploy:       success
+```
+
+Important correctness added during implementation:
+
+- same idempotency key cannot map to a different request hash or a different Connector Job ID;
+- GET/CANCEL response Job ID must match the requested opaque ID;
+- requested output roles must be declared by the active capability;
+- Job response contractVersion must match the submitted capability contract;
+- model/workflow projection retains only stable id/version/revision;
+- `succeeded` maps to `result_available`, never AgentScape asset/task completion.
+
+### Unlocked Gate
+
+J-02 restart/reconcile/event recovery is now ready.
