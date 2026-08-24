@@ -1,5 +1,7 @@
 # `modal-3D-client` 文件级实施计划
 
+> 执行进度、当前 HEAD、已验证证据与下一批具体任务见 [`00-execution-status.md`](./00-execution-status.md)。本文件保留为设计/验收基线。
+
 ## 1. 项目定位
 
 `modal-3D-client` 是第一组的本地产品面，也是后续 AgentScape 访问 Modal 的安全连接基础。它必须同时承担四类责任：

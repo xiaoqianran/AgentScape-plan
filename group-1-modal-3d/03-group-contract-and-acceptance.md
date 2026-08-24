@@ -1,5 +1,7 @@
 # 第一组联合契约与验收：`modal-3D + modal-3D-client`
 
+> 执行进度、当前 HEAD、已验证证据与下一批具体任务见 [`00-execution-status.md`](./00-execution-status.md)。本文件保留为设计/验收基线。
+
 ## 1. 联合交付目标
 
 第一组完成时，用户应能在一台全新 Windows 设备上完成下面的事实闭环：
