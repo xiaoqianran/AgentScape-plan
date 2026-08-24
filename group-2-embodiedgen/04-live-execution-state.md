@@ -160,7 +160,7 @@ part segmentation
 | GraspGen raw inference | VERIFIED | production URDF transform + 20 raw grasps + finite pose checks | semantic selection / SAPIEN eval |
 | GPT part semantics | GATED | 无 GPT Secret | 配置独立 semantic Secret / endpoint |
 | SAPIEN grasp evaluation | PLANNED | 无 runtime canary | raw grasps + semantic stage |
-| Affordance Job API | PLANNED | 目前是独立 worker | stage contract / job state / artifact roles |
+| Affordance Job API | VERIFIED core | `adf9fcf` derived job `segment→grasp_raw→finalize` + bundle v1 canary | proxy-auth HTTP POST canary + semantic/SAPIEN profiles |
 | AgentScape part evidence import | VERIFIED core | `671e1ac` BundleAdapter + real 50k-face compile/admission E2E | frozen fixture + transport integration |
 
 ## 4. 执行任务图
@@ -329,6 +329,21 @@ SAPIEN 通过只代表指定 simulation profile 下通过，不能升级为 Agen
 
 ### AFF-06：统一 Affordance Job / bundle contract
 
+> **状态：VERIFIED core（2026-08-24）**。`modal-build@adf9fcf` 已部署 `part-evidence-only` derived Job/API；真实 canary `job-a2595a4645f6454cb9d4dbc2b0dff692` 成功跑完 `segment → grasp_raw → finalize`。
+
+真实 canary 证据：
+
+- source Job：`job-f82e3eaab6a846e08d32874788495b80`；
+- stage seconds：segment `37.561`、grasp_raw `19.163`、finalize `3.899`；
+- output files 只暴露 derived job 自己的 8 个 role；
+- `affordance/bundle.v1.json` provider=`embodiedgen`、workflow=`asset.affordance`、workflowVersion=`part-evidence-only`；
+- primary GLB / URDF / segmentation / raw grasp SHA 均独立复算匹配；
+- segmentation 绑定 primary GLB SHA，50,000 faces / 4 parts；
+- raw grasp count=20，evidence level=`raw`，`output_job_id` 指向 derived Job；
+- bundle 已被 `AgentScape@671e1ac` 直接消费，materialized / coverage=1 / 4 parts / hard=0 / final provisional。
+
+未完成项：Modal endpoint 使用 proxy auth；当前只确认 route 已部署、异步 endpoint 本地测试通过，因现有 proxy token secret 不可读取且未擅自新建凭据，尚未做真实带认证 HTTP POST canary。
+
 只有 AFF-02/03 至少完成后再落地 Job API，避免把错误 artifact schema 固化成外部协议。
 
 首版 stage 建议：
@@ -397,8 +412,8 @@ Job 必须允许 `part-evidence-only` profile，这样 AgentScape 不需要等�
 
 AFF-02、AFF-03 与 AgentScape E-01 core 已解锁并验证。下一阶段按当前价值/依赖关系：
 
-1. **AFF-06 part-evidence-only Job/API**：先把已验证 `segment + grasp_raw + finalize` 纳入统一异步 Job/stage contract，不等待 GPT；
-2. **AS-EG-05 frozen fixture E2E**：把真实 provider contract 缩成脱敏、体积受控 fixture，锁住 BundleAdapter→Compiler→Admission 回归；
+1. **AS-EG-05 frozen fixture E2E**：把真实 provider contract 缩成脱敏、体积受控 fixture，锁住 BundleAdapter→Compiler→Admission 回归；
+2. **AFF-06 HTTP proxy-auth canary**：仅在已有 proxy secret 可安全取得时执行，不为测试擅自创建长期凭据；
 3. **AFF-04 semantic worker contract**：先实现 Secret/profile/prompt/provenance 边界；真实 E2E 仍受 GPT Secret Gate；
 4. 配置 GPT Secret 后执行 AFF-04 真实 semantic canary；
 5. **AFF-05 SAPIEN grasp evaluation**：只消费 raw + semantic-selected grasp，不覆盖原始 evidence；

@@ -4,7 +4,7 @@
 >
 > 本文只定义 EmbodiedGen enriched bundle 如何进入 AgentScape 现有 Compiler / Admission。核心原则：**provider evidence 进入编译器，不直接变成 runtime truth。**
 
-> **2026-08-24 实施状态**：core bridge 已验证。Provider 基线 `modal-build@69c910c`；AgentScape 实现 `671e1ac feat: bridge EmbodiedGen evidence into compiler`。真实 50k-face Bundle 已得到 `materialized` / coverage=1 / 4 parts，并正确保持 `provisional`。
+> **2026-08-24 实施状态**：core bridge 已验证。Provider 基线 `modal-build@adf9fcf`；AgentScape 实现 `671e1ac feat: bridge EmbodiedGen evidence into compiler`。真实 50k-face Bundle 已得到 `materialized` / coverage=1 / 4 parts，并正确保持 `provisional`。
 
 ## 1. 当前 AgentScape 事实
 
@@ -86,7 +86,7 @@ materialization.primitives[]:
 
 ### 3.1 Provider alignment Gate 已实现并验证
 
-`modal-build@69c910c` 已实现该硬 Gate：P3-SAM flat source labels 不直接交给 AgentScape，而是在 provider 端重新解析 primary GLB，先验证 OBJ/GLB vertex identity，再按 triangle vertex-index set 建立 face mapping，最终发布 `agentscape_part_segmentation.v1.json`。
+`modal-build@adf9fcf` 已实现并通过 derived-job canary 的该硬 Gate：P3-SAM flat source labels 不直接交给 AgentScape，而是在 provider 端重新解析 primary GLB，先验证 OBJ/GLB vertex identity，再按 triangle vertex-index set 建立 face mapping，最终发布 `agentscape_part_segmentation.v1.json`。
 
 真实 production evidence：
 
@@ -353,9 +353,12 @@ AgentScape 必须证明：
 
 跨仓真实 E2E（非 synthetic fixture）：
 
-- provider：`modal-build@69c910c`；
+- provider：`modal-build@adf9fcf`；
 - consumer：`AgentScape@671e1ac`；
 - source Job：`job-f82e3eaab6a846e08d32874788495b80`；
+- derived Affordance Job：`job-a2595a4645f6454cb9d4dbc2b0dff692`，profile=`part-evidence-only`；
+- derived stage seconds：segment=37.561 / grasp_raw=19.163 / finalize=3.899；
+- bundle v1 的 primary GLB / URDF / segmentation / raw grasp descriptor SHA 均独立复算匹配；
 - BundleAdapter 校验 primary GLB + segmentation SHA，raw grasp 保留 descriptor-level evidence；
 - `SegmentMaterializePass.status=materialized`；
 - coverage=`1`；

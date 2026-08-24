@@ -119,7 +119,7 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 | C-02 Capability Adapter | `PLANNED` | 无正式代码 | C-01 |
 | J-01/J-02 Async Job | `PLANNED` | 无正式代码 | Connector contract freeze |
 | A-01/A-02 Artifact | `PLANNED` | 无正式代码 | Job/Artifact contract freeze |
-| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@69c910c` + `AgentScape@671e1ac`; real 50k-face Bundle→Compiler→Admission E2E | frozen fixture + Artifact/Job transport |
+| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@adf9fcf` + `AgentScape@671e1ac`; derived bundle v1 + real 50k-face Bundle→Compiler→Admission E2E | frozen fixture + Artifact/Job transport |
 
 ### 3.1 AgentScape main
 
@@ -228,13 +228,15 @@ backend stash empty allowlist
 
 2026-08-24 已同步到远端 main/master 的真实事实：
 
-- `modal-build@69c910c`：Affordance native wheels、P3-SAM segmentation、compiler-native GLB labels、GraspGen raw 6-DoF inference；
+- `modal-build@adf9fcf`：Affordance native wheels、P3-SAM segmentation、compiler-native GLB labels、GraspGen raw 6-DoF inference，以及 `part-evidence-only` derived Job/API；
 - P3-SAM：真实 production Job 50,000 faces 全覆盖，4 parts；
 - compiler-native evidence：绑定 primary GLB SHA、sourceNode=`geometry_0`、primitive labels 50,000，provider 端显式验证 OBJ↔GLB vertex/triangle identity；
 - GraspGen：真实 production URDF→top-20 raw grasps，score/rotation 均 finite，artifact 明确 `evidence_level=raw`；
 - `AgentScape@671e1ac`：新增 `EmbodiedGenBundleAdapter`、providerEvidence provenance、provider-aware CompileQuality/Admission reasons；
 - 真实 Bundle→Compiler→Admission：`materialized`、coverage=1、4 parts、hard=0、final=`provisional`；
 - raw grasp 未越权提升为 pickup truth；semantic/SAPIEN 仍未 VERIFIED。
+- derived Job `job-a2595a4645f6454cb9d4dbc2b0dff692` 已成功产出 bundle v1，三阶段约 `37.6s / 19.2s / 3.9s`；
+- proxy-auth HTTP route 已部署，但真实带认证 POST 尚未执行。
 
 因此 E-01 的 core contract 已通过。剩余 Gate 是：把真实 contract 冻结成脱敏 fixture，并接入正式 Artifact/Job transport；AgentScape 仍不得通过 provider semantic/grasp 直接构造未经 Runtime 验证的 joint/action truth。详细跨仓任务见 [`../group-2-embodiedgen/04-live-execution-state.md`](../group-2-embodiedgen/04-live-execution-state.md) 与 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
 
