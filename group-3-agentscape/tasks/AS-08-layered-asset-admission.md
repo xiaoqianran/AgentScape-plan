@@ -5,8 +5,9 @@
 ```text
 Task ID:        AS-08
 Parent Plan:    AgentScape Integration Plan / Asset Admission 收敛
-Status:         READY
+Status:         MERGED
 Base Commit:    571c747
+Final Commit:   5202f6f
 Feature Branch: feat/as08-layered-admission
 ```
 
@@ -184,3 +185,34 @@ existing spawn/generate/admission tests remain green
 - Python smoke PASS;
 - CodeGraph impact reviewed;
 - GitHub Actions build + Pages deploy PASS.
+
+## 12. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       5202f6f feat: converge layered asset admission
+Merged into main:   yes
+Focused tests:      6 files / 60 tests PASS
+Wide regression:    13 files / 100 tests PASS
+Full JS regression: 133 files / 576 tests PASS
+Asset validation:   PASS
+Production build:   PASS (vite exit_code=0, 16.47s)
+Python smoke:       7/7 PASS
+CodeGraph impact:   56 nodes / 92 edges
+GitHub Actions run: 32714571014
+Test and build:     success
+Pages deploy:       success
+```
+
+Key convergence rules now enforced:
+
+- provider/compiler/runtime statuses are separate layers;
+- aggregate readiness uses worst-layer-wins;
+- explicit provider admission is no longer aggregate authority;
+- legacy AS-05 aggregate snapshots are detected and ignored as provider evidence;
+- generated assets without compiler evidence are `COMPILER_UNVERIFIED`;
+- provider/SAPIEN grasp evidence cannot satisfy runtime articulation readiness;
+- runtime articulation success removes only the runtime blocker;
+- runtime articulation failure remains provisional;
+- `verifyAssetArticulation` now returns aggregate admission readiness rather than raw compiler quality;
+- AS-05 no longer writes the aggregate admission back to top-level `provenance.admission`.
