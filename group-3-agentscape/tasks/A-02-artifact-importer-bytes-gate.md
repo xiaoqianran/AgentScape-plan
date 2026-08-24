@@ -6,8 +6,9 @@
 Task ID:        A-02
 Parent Plan:    AS-04 / Gate L4
 Owner Track:    Artifact / Connector
-Status:         READY
+Status:         MERGED
 Base Commit:    ac3f996
+Final Commit:   09e63cc
 Feature Branch: feat/a02-artifact-importer
 ```
 
@@ -255,3 +256,37 @@ verified artifact still != Asset Admission ready
 - Python smoke PASS;
 - CodeGraph impact remains Artifact/Connector-only;
 - GitHub Actions build + Pages deploy PASS.
+
+## 16. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       09e63cc feat: add streaming artifact integrity importer
+Merged into main:   yes
+Focused A-02:       9 files / 69 tests PASS
+Wide regression:    18 files / 133 tests PASS
+Full JS regression: 132 files / 536 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 13.86s)
+Python smoke:       4/4 PASS
+GitHub Actions run: 32707156221
+Test and build:     success
+Pages deploy:       success
+```
+
+Additional correctness boundaries implemented:
+
+- incremental SHA-256 is chunked and verified against Node crypto, not whole-buffer WebCrypto;
+- Connector artifact source binds artifact ID to connector id + connector instance;
+- authenticated artifact fetches use `artifacts.read`, `credentials=omit`, and `redirect=error`;
+- streaming has hard maxBytes/maxChunks limits;
+- JSON has maxStructuredBytes/maxJsonDepth/maxJsonNodes;
+- GLB validates v2 header, total length, JSON first chunk type/alignment/object start;
+- archive MIME fails closed;
+- temp bytes publish only after all integrity gates;
+- failure cleanup retains descriptor/lineage and releases transfer lease;
+- provider/network failure does not fabricate verified/rejected Artifact truth.
+
+### Unlocked Gate
+
+AS-05 Generic modal-3D single-asset production loop is ready: verified GLB Artifact -> AssetCompiler -> Asset Admission -> Manifest registration.
