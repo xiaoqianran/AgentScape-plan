@@ -6,8 +6,9 @@
 Task ID:        AS-05
 Parent Plan:    AgentScape Integration Plan / Gate L5
 Owner Track:    Artifact -> Compiler -> Asset Admission
-Status:         READY
+Status:         MERGED
 Base Commit:    09e63cc
+Final Commit:   162a101
 Feature Branch: feat/as05-modal3d-single-asset
 ```
 
@@ -226,3 +227,37 @@ existing AssetCompiler/Admission tests remain green
 - Python smoke PASS;
 - CodeGraph confirms bounded pipeline impact;
 - GitHub Actions build + Pages deploy PASS.
+
+## 15. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       162a101 feat: add verified artifact asset production loop
+Merged into main:   yes
+Focused tests:      6 files / 51 tests PASS
+Wide regression:    13 files / 88 tests PASS
+Full JS regression: 133 files / 551 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 15.84s)
+Python smoke:       4/4 PASS
+CodeGraph impact:   5 nodes / 6 edges
+GitHub Actions run: 32708197749
+Test and build:     success
+Pages deploy:       success
+```
+
+Key correctness boundaries implemented:
+
+- verified Artifact local-cache identity is checked before compiler invocation;
+- Connector bytes are not re-fetched once verified local bytes exist;
+- Artifact ID and Asset ID remain distinct;
+- compile lease is held across compile/admission/register and always released;
+- real generic GLB compiler fallback remains `asset-provisional`;
+- compiler rejection and admission rejection do not fabricate registration success;
+- compiler failure does not mutate Artifact integrity or evict verified bytes;
+- same source Artifact/hash may safely reuse an already-registered asset; conflicting assetId provenance fails closed;
+- compiler-generated actions/physics remain authoritative; provider metadata does not inject runtime actions.
+
+### Next actual gap
+
+Current repository inspection shows AS-06/07 part-segmentation bridge is already implemented, but `source_urdf` remains descriptor-only in `EmbodiedGenBundleAdapter`; URDF bytes are not yet hash-verified/parsing-normalized into compiler evidence. The next slice should close this gap rather than duplicate the existing bundle/segmentation path.
