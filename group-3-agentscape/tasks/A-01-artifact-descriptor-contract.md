@@ -6,8 +6,9 @@
 Task ID:        A-01
 Parent Plan:    AS-04 / Gate L4
 Owner Track:    Artifact
-Status:         READY
+Status:         MERGED
 Base Commit:    140acd9
+Final Commit:   ac3f996
 Feature Branch: feat/a01-artifact-descriptor
 ```
 
@@ -261,3 +262,35 @@ Those belong to A-02 and later gates.
 - secret scan clean;
 - CodeGraph impact remains isolated;
 - CI/Pages deploy PASS.
+
+## 15. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       ac3f996 feat: add artifact identity and lineage registry
+Merged into main:   yes
+Artifact focused:   2 files / 23 tests PASS
+Artifact+Job focus: 12 files / 98 tests PASS
+Full JS regression: 126 files / 501 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 12.25s)
+Python smoke:       4/4 PASS
+GitHub Actions run: 32703543045
+Test and build:     success
+Pages deploy:       success
+```
+
+Additional contract hardening implemented:
+
+- registry internal maps are private and only defensive snapshots escape;
+- active leases cannot be bypassed by cleanup callers;
+- available locations require safe derived access handles;
+- location ID cannot silently change kind/scope/active access identity;
+- expired/unavailable location may clear a now-invalid access handle;
+- display/warning/lease text rejects URL/Bearer/path-like transport detail;
+- retention cannot expire before artifact creation;
+- same hash across different opaque IDs is indexed as content equivalence, never identity merge.
+
+### Unlocked Gate
+
+A-02 streaming Artifact Importer / bytes-integrity gate is ready.
