@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。它不替代 `00-master-roadmap.md`、`01-AgentScape-integration-plan.md` 或跨项目 contract；稳定文档回答“最终系统要长什么样”，本文件回答“当前代码已经做到哪里、下一项具体工作是什么、谁可以做、依赖什么、如何验收”。
 >
-> 状态快照：**2026-08-24 13:34 +08:00**。任何实施前必须重新读取 AgentScape `git status`、HEAD、分支、stash 与 CodeGraph；不要把本文件里的 commit/status 当永久事实。
+> 状态快照：**2026-08-25 01:27 +08:00**。任何实施前必须重新读取 AgentScape `git status`、HEAD、分支、stash 与 CodeGraph；不要把本文件里的 commit/status 当永久事实。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -33,7 +33,7 @@ AgentScape 已经进入多条并行工作流：Runtime truth 修复、1.35 World
                  ┌─────────────────────────────────┐
                  │ Runtime / Physics / Interaction │
                  │ Generated World / Retry         │
-                 │ Provider Registry (AS-01 branch)│
+                 │ Provider/Connector/Job/Artifact (merged)│
                  │ 1.35 WorldRevision stash        │
                  │ Backend handoff stash           │
                  └───────────────┬─────────────────┘
@@ -106,59 +106,62 @@ AgentScape 已经进入多条并行工作流：Runtime truth 修复、1.35 World
 
 Runtime 的主要问题已经从“有没有能力”转向“能力真值是否稳定、失败是否可恢复”；生成侧的主要问题已经从“能不能请求 generator”转向“Provider/Job/Artifact 是否具备正式产品契约”。
 
-## 3. 2026-08-24 当前实现账本
+## 3. 2026-08-25 当前实现账本
 
 | Slice | 当前状态 | Git/实现身份 | 下一 Gate |
 |---|---|---|---|
-| R-01 Runtime truth stabilization | `IN_PROGRESS` | `890727f` 已 merged + 当前 dirty WIP | dirty WIP 收口 |
-| P-01 Provider Registry | `COMMITTED_NOT_MERGED` | `ffdbc49` / `feat/as01-provider-registry` | rebase/cherry-pick + full verify |
-| W-01 WorldSpec Revision | `STASH_PROTOTYPE` | `stash@{1}` | R-01 + mutation contract decision |
-| B-01 Backend handoff | `STASH_PROTOTYPE` | `stash@{0}` | CORS ADR |
-| R-02 Mutation atomicity | `BLOCKED` | reproducer 已确认，未正式修复 | R-01 ownership 释放 |
-| C-01 Connector Pairing | `PLANNED` | 无正式代码 | P-01 merged |
-| C-02 Capability Adapter | `PLANNED` | 无正式代码 | C-01 |
-| J-01/J-02 Async Job | `PLANNED` | 无正式代码 | Connector contract freeze |
-| A-01/A-02 Artifact | `PLANNED` | 无正式代码 | Job/Artifact contract freeze |
-| E-01 EmbodiedGen part evidence bridge | `VERIFIED_CORE` | `modal-build@adf9fcf` + `AgentScape@671e1ac`; derived bundle v1 + real 50k-face Bundle→Compiler→Admission E2E | frozen fixture VERIFIED (`51bf326`)；下一 Gate = Artifact/Job transport + semantic evidence |
+| R-01 Runtime truth stabilization | `MERGED` | 当前 `main@d28980d` 已包含此前 Runtime truth 修复 | 继续按独立 Runtime track 处理剩余 correctness |
+| P-01 Provider Registry | `MERGED` | `0684af0 feat: add provider capability registry` | 已解锁 Connector/Job/Artifact |
+| W-01 WorldSpec Revision | `STASH_PROTOTYPE` | 历史 stash prototype；未作为当前正式能力 | 独立恢复/重新验证 |
+| B-01 Backend handoff | `STASH_PROTOTYPE` | 历史 stash prototype；未作为当前正式能力 | CORS/production boundary 独立收口 |
+| R-02 Mutation atomicity | `PLANNED` | 当前 Live Map 仍无新的 merged fix 证据 | 独立 Runtime Gate |
+| C-01 Connector Pairing | `MERGED` | `fefa495 feat: add scoped connector pairing sessions` | 已解锁 C-02/J-01 |
+| C-02 Capability Adapter | `MERGED` | `47470c0 feat: add connector capability snapshots` | 已解锁 J-01 |
+| J-01 Async Job | `MERGED` | `6a08f31 feat: add async generation job projection` | 已解锁 J-02/A-01 |
+| J-02 Reconcile/Recovery | `MERGED` | `140acd9 feat: add job reconcile and event recovery` | 已解锁 Agent-visible recovery |
+| A-01 Artifact Descriptor | `MERGED` | `ac3f996 feat: add artifact identity and lineage registry` | 已解锁 A-02 |
+| A-02 Artifact Importer | `MERGED` | `09e63cc feat: add streaming artifact integrity importer` | 已解锁 verified asset pipeline |
+| AS-05 Single Asset Pipeline | `MERGED` | `162a101 feat: add verified artifact asset production loop` | 已进入 Compiler/Admission truth |
+| AS-06/08 Evidence + Admission | `MERGED` | `a4b3297` / `571c747` / `5202f6f` / `d28980d` | provider evidence 保持非 Runtime truth |
+| E-01 EmbodiedGen part evidence bridge | `MERGED` | `671e1ac` + `51bf326` + `d28980d` | production provider transport / SAPIEN provider Gate 继续独立推进 |
+| AS-09 Agent-visible async generation | `COMMITTED_NOT_MERGED` | `9523ecc feat: add agent-visible async generation orchestration` | review/merge 到 main；随后 AS-10 |
 
 ### 3.1 AgentScape main
 
-当前已观察到：
+2026-08-25 01:27 +08:00 重新读取后的代码事实：
 
 - `main == origin/main`；
-- HEAD：`890727f fix embodied placement and door interaction planning`；
-- 该提交修改 `LocalPlannerGateway`、`InteractionSystem`、`SpatialSystem`、UI 与相关 regression tests；
-- 当前工作树仍有未提交修改：`ToolCallingAgent.js`、`main.js`、`agent-multistep-e2e.test.js`、`tool-calling-agent-sequencing.test.js`；
-- 因此 Runtime truth track 仍处于 **`DIRTY_WIP` + 已有一批 `MERGED` 修复** 的混合状态。
+- HEAD：`d28980d feat: bridge EmbodiedGen semantic evidence`；
+- `0684af0 / fefa495 / 47470c0 / 6a08f31 / 140acd9 / ac3f996 / 09e63cc / 162a101 / a4b3297 / 571c747 / 5202f6f / 51bf326 / d28980d` 均已确认是当前 HEAD 的祖先提交；
+- 因此 Provider / Connector / Async Job / Artifact / single-asset Compiler→Admission 基础层均已进入 `main`，不应再标为 `PLANNED`；
+- AS-09 已形成独立 feature commit `9523ecc`：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
+- AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
+- AS-09 尚未合入 `main`，因此按本文件协议标 `COMMITTED_NOT_MERGED`，不能写 `MERGED`。
 
-此状态意味着：在 dirty WIP 收口以前，不应把高 blast-radius 的 Runtime 文件同时交给 Provider/Connector 工作修改。
+当前生成主链已达到：
+
+```text
+Provider/Capability
+        -> local Generation Job
+        -> generation-pending / provider-succeeded
+        -> Artifact descriptor/import/hash verification
+        -> VerifiedArtifactAssetPipeline
+        -> AssetCompiler
+        -> Admission
+        -> asset-ready / asset-provisional / asset-rejected
+```
+
+真值边界继续强制保持：`provider-succeeded != artifact-imported != asset-ready != world-ready`。
 
 ### 3.2 AS-01 Provider Registry
 
-状态：**`COMMITTED_NOT_MERGED`**。
+状态：**`MERGED`**。
 
-- branch：`feat/as01-provider-registry`；
-- commit：`ffdbc49 feat: add provider capability registry`；
-- 基点包含 `188c360`，**不包含**当前 `890727f`；
-- 新增 provider identity / version / health / status / capability discovery / execution binding / result consumer；
-- `AssetLibrary` 不再要求新增 provider 时添加 provider-specific `if/else`；
-- 包含 `local-catalog`、legacy HTTP、`modal-2d`、`modal-3d`、`embodiedgen` 第一批 capability descriptors；
-- 自定义 `custom-3d` contract test 证明新 provider 可通过 registry/consumer 接入。
-
-验证证据（独立 AS-01 patch）：
-
-- Asset validation：PASS；
-- `113` test files / `392` tests：PASS；
-- Production build：尚未取得 `exit_code=0`；Action 多次在 Vite `transforming...` 阶段达到 38 秒执行上限，因此 **不得标记 build PASS**。
-
-合并前硬要求：
-
-1. 等 Runtime dirty WIP 收口；
-2. 将 `ffdbc49` rebase/cherry-pick 到最新 main；
-3. 解决任何 `AssetLibrary`/UI/gateway 语义变化；
-4. 重跑相关 tests；
-5. 获得 production build 的明确成功退出码；
-6. 再把 AS-01 标为 `MERGED`。
+- 当前 main 身份：`0684af0 feat: add provider capability registry`；
+- Provider identity/version/health/status/capability discovery/execution binding/result consumer 已正式进入主线；
+- Connector capability snapshot 已通过 C-02 normalize 后写入 Registry；
+- 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
+- 当前完整仓库验证已包含该基础层：`136 files / 590 tests PASS`，production build exit code 0。
 
 ### 3.3 1.35 Constrained WorldSpec Revision
 
@@ -214,7 +217,7 @@ backend stash empty allowlist
 
 ### 3.5 Runtime mutation atomicity
 
-状态：**`PLANNED_CORRECTNESS_FIX`**，暂不与当前 Runtime WIP 并发修改。
+状态：**`PLANNED`**，暂不与当前 Runtime WIP 并发修改。
 
 已通过最小运行实验复现：`WorldRuntime.mutate()` 中 operation 先改变状态、随后抛异常时，`CommandHistory.cancel()` 只清理 pending history，不恢复 before snapshot；实验观察到 `rollbackObserved=false`。
 
@@ -327,25 +330,22 @@ Task verified
 - 相关回归 PASS；
 - 无 pending Runtime correctness regression。
 
-### P-01 Merge Provider Registry foundation
+### P-01 Provider Registry foundation
 
-**状态：READY AFTER R-01 CLEANUP。**
+**状态：MERGED — `0684af0`。**
 
-任务：把 `ffdbc49` 带到最新 main，而不是继续在旧基点开发。
-
-验收：
+该 Gate 已完成，不再作为待执行任务。后续实现必须复用现有 Provider Registry，并继续保持：
 
 - provider descriptors 不泄露 secret；
 - stable operation ID；
 - capability discovery 不依赖 provider-specific branch；
 - disabled provider 不被误判 available；
 - raw result 必须经过 registered consumer；
-- provider evidence 不直接升级为 Runtime action/capability；
-- full test + production build 有明确成功证据。
+- provider evidence 不直接升级为 Runtime action/capability。
 
 ### C-01 Connector Pairing Contract（AS-02a）
 
-**状态：PLANNED，依赖 P-01。**
+**状态：MERGED — `fefa495`；当前 main 已包含 scoped Connector pairing。**
 
 只定义/实现本地 Connector 会话边界，不碰 Async Job DB：
 
@@ -362,7 +362,7 @@ Task verified
 
 ### C-02 Capability Discovery Adapter（AS-02b）
 
-**状态：PLANNED，依赖 C-01。**
+**状态：MERGED — `47470c0`；Connector capability snapshot → ProviderRegistry normalization 已进入 main。**
 
 Connector capability response -> AgentScape `ProviderRegistry` descriptor；必须是“normalize 后注册”，不允许 UI/AssetLibrary 直接消费 provider 私有 schema。
 
@@ -374,7 +374,7 @@ Connector capability response -> AgentScape `ProviderRegistry` descriptor；必�
 
 ### J-01 Async Generation Job State Machine（AS-03a）
 
-**状态：PLANNED，依赖 C-01/C-02 contract freeze。**
+**状态：MERGED — `6a08f31`；本地 Generation Job identity/state 已进入 main。**
 
 首版只实现本地 Job identity/state，不同时实现 UI Job Center。
 
@@ -399,7 +399,7 @@ failed
 
 ### J-02 Async Reconcile / Restart Recovery（AS-03b）
 
-**状态：PLANNED，依赖 J-01。**
+**状态：MERGED — `140acd9`；poll/event reconcile、restart recovery 基础层已进入 main。**
 
 任务：本地进程重启后通过 provider identity + remote job ID reconcile，不依赖过期 signed URL。
 
@@ -407,19 +407,19 @@ failed
 
 ### A-01 Artifact Descriptor Contract（AS-04a）
 
-**状态：PLANNED，可在 J-01 contract 冻结后与 J-02 部分并行。**
+**状态：MERGED — `ac3f996`；Artifact identity/lineage/locations/lease contract 已进入 main。**
 
 定义 opaque artifact ID、role、hash、MIME、bytes、locations、lineage、lease/retention；remote URL 只是 location，不是 artifact identity。
 
 ### A-02 Artifact Importer Bytes/Hash Gate（AS-04b）
 
-**状态：PLANNED，依赖 A-01。**
+**状态：MERGED — `09e63cc`；streaming bytes/hash/MIME gate 已进入 main。**
 
 实现 streaming import、length/hash/MIME/budget、temporary location cleanup；禁止直接把 signed URL 持久化进 scene/world truth。
 
 ### E-01 EmbodiedGen Part Evidence Bridge
 
-**状态：VERIFIED_CORE；正式 transport 仍依赖 A-01/A-02，frozen fixture 仍待提交。**
+**状态：MERGED；A-01/A-02 transport 与 frozen fixture 均已进入 main，且已有验证证据。**
 
 两段 core task 均已完成：
 
@@ -437,7 +437,35 @@ failed
 - semantic/grasp evidence 未越权提升为 joint/action truth；
 - legacy `EmbodiedGenAdapter` 未修改。
 
-AS-EG-05 base fixture 与 semantic fixture 都已完成；semantic bridge 已由 `d28980d` 验证。下一 Gate：SAPIEN evidence + Artifact/Job transport。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+AS-EG-05 base fixture 与 semantic fixture 都已完成；semantic bridge 已由 `d28980d` 验证。Artifact/Job 基础 transport 已进入 main；下一跨仓 Gate 聚焦真实 production provider transport 与 SAPIEN provider evidence，仍不得提升为 AgentScape Runtime grasp truth。详细文件级任务见 [`06-embodiedgen-evidence-bridge-execution.md`](./06-embodiedgen-evidence-bridge-execution.md)。
+
+### AS-09 Agent-visible Async Generation Orchestration
+
+**状态：COMMITTED_NOT_MERGED — `9523ecc`；验证已通过，但尚未进入 main。**
+
+当前本地实现已经完成首版 Agent-visible generation orchestration：
+
+- 新增 `src/generation/GenerationOrchestrator.js`；
+- Runtime 可选择配置 Connector，并将 generation service 注入 Skills；
+- Agent 工具：`listGenerationProviders`、`listGenerationCapabilities`、`submitGenerationJob`、`getGenerationJob`、`cancelGenerationJob`、`importGenerationResult`、`generateAndCompileAsset`；
+- submit/cancel/import 属于外部 Job/Artifact side effect，不使用 World history mutation；
+- 相同 generation request 派生稳定 request hash/idempotency key，并优先复用本地 Job projection，避免重复付费提交；
+- `provider-succeeded` 与 `artifact-imported` 在 Skill execution policy 中均保持 `unverified`；
+- Artifact 必须通过现有 streaming bytes/hash/MIME gate 后才能进入 `VerifiedArtifactAssetPipeline`；
+- 高层 orchestration 在 Job 未完成时直接返回 `generation-pending`，不会同步阻塞等待 Provider；
+- Provider success 后仍必须经过 Artifact import → Compiler → Admission，最终才产生 `asset-ready/provisional/rejected`。
+
+本地验收证据：
+
+- generation E2E 证明 `generation-pending -> provider-succeeded -> artifact-imported -> asset-provisional`，且 provider success 时 AssetManager 中仍无该资产；
+- 相同请求重复 submit 的测试证明 remote POST 只发生一次；
+- secret-like generation payload 在 Skill execution/trace 之前 fail closed；
+- generation/Provider/Connector/Job/Artifact/Compiler 扩大回归：`20 files / 192 tests PASS`；
+- full suite：`136 files / 590 tests PASS`；
+- `npm run assets:validate`：PASS；
+- `npm run build`：exit code 0。
+
+升级为 `MERGED` 的唯一代码 Gate：review/cherry-pick/merge `9523ecc` 到最新 AgentScape main，并在合并身份上保留必要回归证据。之后再进入 AS-10 Job Center / Connector configuration UX，不应先扩 Generated World v2。
 
 ### W-01 Formalize Constrained WorldSpec Revision
 
@@ -506,26 +534,34 @@ scene/runtime truth == before
 
 ### Gate L2：Connector Session Stable
 
-- C-01/C-02；
+**状态：MERGED FOUNDATION。**
+
+- C-01/C-02 已进入 main；
 - credential 不进入 browser；
 - session scope/version/revoke/expiry 完整；
 - Connector capability -> ProviderRegistry normalization 完成。
 
 ### Gate L3：Async Job Truth Stable
 
-- J-01/J-02；
+**状态：MERGED FOUNDATION。**
+
+- J-01/J-02 已进入 main；
 - local Job identity 成为用户可见主身份；
 - provider remote ID 只是 location/provenance；
 - pending/provider_succeeded 不冒充 asset-ready。
 
 ### Gate L4：Artifact Truth Stable
 
-- A-01/A-02；
+**状态：MERGED FOUNDATION。**
+
+- A-01/A-02 已进入 main；
 - bytes/hash/role/lineage/locations；
 - signed URL 不成为持久 identity；
 - malformed/oversize/corrupt fail-closed。
 
 ### Gate L5：Single Asset End-to-End
+
+**状态：MERGED PIPELINE + AS-09 COMMITTED_NOT_MERGED。**
 
 - generic modal-3D 或 EmbodiedGen 单资产；
 - Job -> Artifact -> Compiler -> Admission；
@@ -563,15 +599,15 @@ R-01 -> P-01 -> W-01/B-01/R-02 按 ownership 串行收口。
 
 ### Phase 2：Providerized Async Asset Generation
 
-C-01 -> C-02 -> J-01 -> J-02 -> A-01/A-02。
+**基础层已 MERGED：** C-01 -> C-02 -> J-01 -> J-02 -> A-01/A-02。后续不重复实现该链。
 
 ### Phase 3：Single Asset Production Loop
 
-AS-05/05A/06/07/08：provider job -> artifact -> compiler evidence -> admission。
+**核心链已 MERGED：** AS-05/06/08 已提供 artifact -> compiler evidence -> admission；当前 AS-09 把 Job/Artifact 正式接到 Agent-visible orchestration。
 
 ### Phase 4：Agent-visible Generation
 
-AS-09/10：高层 skills、policy/cost confirmation、Job Center；Agent 不直接拿 provider 私有 API。
+AS-09 当前为 `COMMITTED_NOT_MERGED`（`9523ecc`）：高层 skills、async resume、Artifact import、Compiler/Admission orchestration 已验证；合并后进入 AS-10 Job Center / Connector 配置与可视化恢复。Agent 始终不直接拿 provider 私有 API。
 
 ### Phase 5：Generated World v2
 
@@ -602,14 +638,14 @@ AS-14～19：environment/room、offline restore、安全、observability、fault
 
 按当前状态，下一次读取 AgentScape 时优先回答：
 
-1. `890727f` 之后的 dirty Runtime WIP 是否已提交？
-2. quick-task deterministic fallback 是否成为正式设计还是临时 UX fix？
-3. Runtime regression 基线现在是多少 tests/files？
-4. `ffdbc49` 是否可以安全 rebase/cherry-pick 到最新 main？
-5. production build 能否取得明确 `exit_code=0`？
-6. `WorldRevision` 与 backend stash 是否仍完整、是否已被新 main 语义覆盖？
-7. `WorldRuntime.mutate()` atomicity 是否有新修复或新 caller compensation？
-8. AS-02 的 Connector pairing contract 是否已有跨项目可消费实现。
-9. E-01 的真实 provider contract 是否已经冻结成脱敏 fixture，并准备好接入 A-01/A-02 Artifact transport。
+1. `9523ecc` 是否已 review/merge 到最新 main，并在 merge identity 上保持 full tests/build 通过？
+2. Runtime 的 Connector endpoint/pairing 初始化是否需要独立配置 UX，而不是长期依赖裸 `localStorage` key？
+3. AS-09 的高层 `generateAndCompileAsset` 是否需要进一步支持 EmbodiedGen multi-artifact bundle 的正式选择/导入，而不是只编译 GLB 主产物？
+4. Job resume/reconcile 在真实 Connector 进程重启场景下是否已有 production E2E，而不仅是 in-process contract tests？
+5. cost/confirmation policy 是否应在 AS-10 前增加显式产品语义，避免 Agent 对付费 provider 静默提交？
+6. Job Center 是否能只消费现有 sanitized Job projection，不复制状态机？
+7. E-01 的真实 production provider artifact 是否已通过正式 Job/Artifact transport，而非仅 frozen fixture？
+8. SAPIEN provider evidence 是否有新的 production VERIFIED 证据；若有，是否仍保持 provider-only provenance？
+9. AS-10 完成后再评估是否解锁 AS-11/12 Generated World v2；不得越过 asset/world truth Gate。
 
-这九个问题决定下一项任务，不按日期机械推进 AS 编号。
+这些问题决定下一项任务，不按日期机械推进 AS 编号。
