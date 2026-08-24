@@ -6,8 +6,9 @@
 Task ID:        J-02
 Parent Plan:    AS-03 / Gate L3
 Owner Track:    Connector / Job
-Status:         READY
+Status:         MERGED
 Base Commit:    6a08f31
+Final Commit:   140acd9
 Feature Branch: feat/j02-job-reconcile-events
 ```
 
@@ -242,3 +243,26 @@ poll fallback uses jobs.read only
 - CI/deploy PASS;
 - no Artifact-ready semantics introduced;
 - no background polling loop created implicitly.
+
+## 15. Completion Evidence
+
+```text
+Final Status:       MERGED
+Final Commit:       140acd9 feat: add job reconcile and event recovery
+Merged into main:   yes
+Focused tests:      6 files / 42 tests PASS
+Full JS regression: 124 files / 478 tests PASS
+Asset validation:   PASS
+Production build:   PASS (exit_code=0, 14.87s)
+Python smoke:       4/4 PASS
+CodeGraph:          Reconciler 7 nodes/11 edges; EventClient 5/7
+GitHub Actions run: 32701237783
+Test and build:     success
+Pages deploy:       success
+```
+
+Key correctness boundary preserved: Connector transport failure is represented as a local overlay and does not fabricate a new remote Job status/event sequence. SSE events are notifications; canonical Job truth is refreshed through `/jobs/{id}` before the global event cursor advances.
+
+### Unlocked Gate
+
+A-01 Artifact Descriptor Contract is now ready.
