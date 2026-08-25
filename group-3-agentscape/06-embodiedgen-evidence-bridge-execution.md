@@ -1,5 +1,7 @@
 # AgentScape × EmbodiedGen Evidence Bridge 执行计划
 
+> 本文是 Provider evidence 专项执行/验收记录，继续用于追溯 EmbodiedGen evidence bridge；它不定义 AgentScape 未来核心架构顺序。未来 Core Gate 与 World IR/PhysicsBackend 见 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md)。
+
 > 更新时间：2026-08-24
 >
 > 本文只定义 EmbodiedGen enriched bundle 如何进入 AgentScape 现有 Compiler / Admission。核心原则：**provider evidence 进入编译器，不直接变成 runtime truth。**

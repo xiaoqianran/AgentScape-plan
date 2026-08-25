@@ -1,6 +1,6 @@
 # `AgentScape` 对接 Modal 与 EmbodiedGen 的实施计划
 
-> 实施状态不在本文维护。当前代码 HEAD、branch/stash、并行任务 ownership、下一可执行切片与验收证据统一记录在 [`04-live-execution-map.md`](./04-live-execution-map.md)。本文保持目标架构与 AS-00～AS-19 稳定定义，避免实时进度污染长期 contract。
+> **历史 Integration 计划。** 当前代码 HEAD/测试/实现状态记录在 [`04-live-execution-map.md`](./04-live-execution-map.md)；从 `main@df9f9c1` 之后的未来架构、Gate 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。AS-00～AS-10 保留为接入历史与兼容 contract；**AS-11～AS-19 不再作为未来线性执行顺序**。
 
 ## 1. 项目定位
 
@@ -385,6 +385,8 @@ runtime: articulation trajectory/physics verification
 - Compile report 与 admission reasons；
 - “注册资产”“加入当前世界”“用于 WorldSpec”分开；
 - provider success 但 compiler rejected 的可解释页面。
+
+> **LEGACY DECOMPOSITION / 历史分解：** 从 AS-11 开始的条目保留用于追溯原始目标，但 Planner、WorldSpec v2、Environment、Security、Observability、Testing 的未来顺序已经被 07 的 World IR / 五大核心 / G0～G8 重新定义。不要按 AS-11→19 机械执行。
 
 ### AS-11：Prompt→WorldSpec Planner
 

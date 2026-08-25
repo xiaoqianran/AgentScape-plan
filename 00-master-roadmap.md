@@ -9,7 +9,7 @@
 3. 将 `modal-2d-client` 与 `modal-3D-client` 彻底统一为一个 Host、Connector、凭据、Job DB、Artifact Cache 和项目系统。
 4. `modal-build` 在不修改 `EmbodiedGen` 的前提下，将其能力拆成可独立部署、可恢复、可组合的 Modal 阶段。
 5. AgentScape 通过同一个本地安全 Connector 使用两条显式 Text→3D 方案：组合式 `modal-2d→SAM→modal-3D`，以及 EmbodiedGen Text→3D bundle。
-6. 所有生成结果先进入 AgentScape 的 Asset Compiler 与 Admission，再进入 WorldSpec、World Runtime、Physics、Navigation 和最终 World Admission；上游模型输出不能绕过验证成为“真实能力”。
+6. 所有生成结果先进入 AgentScape 的 Asset Compiler 与 Admission；长期主链再进入 World IR、Interaction/Rule Compilation、World Runtime、Physics Capability、Navigation 与 Verification。上游模型、Planner 或具体 solver 都不能绕过验证成为未审查的“真实能力”。
 
 本文把“先实现自己的 3D 模型转换”解释为第一条可交付纵向链：
 
@@ -46,7 +46,7 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
 | `modal-client`（最终逻辑产品） | 单一 2D/3D/EmbodiedGen 桌面 Host 与 Connector | 统一 UI、Provider、Job、Artifact、Project、AgentScape 配对 | 同时运行两个 sidecar/vault/DB；以跨端口文件复制冒充统一 |
 | `modal-build` | 构建 2D/3D CUDA 产物、消费固定上游版本、部署 EmbodiedGen Modal 工作流 | Builder、Release、Runtime、版本化 patch、适配层、测试 | 在付费推理容器临时编译；把权重或 Secret 发到 Release |
 | `EmbodiedGen` | 上游能力与语义基线 | **不修改，只读、固定 commit/tag** | 任何业务提交、直接修补、为 Modal 改上游目录 |
-| `AgentScape` | 浏览器原生 Agent Runtime、资产编译、世界准入与执行真值 | Provider/Connector、Adapter、Compiler、WorldSpec、UI、测试 | 在浏览器保存 Modal Token；把 Provider affordance 直接当可执行动作 |
+| `AgentScape` | 浏览器原生 Agent-native World Compiler & Runtime；拥有 World IR、资产/行为编译、运行时与验证边界 | Provider/Connector 支撑、Compiler、World IR、Interaction/Rule、PhysicsBackend、UI、测试 | 在浏览器保存 Modal Token；把 Provider/Planner/solver proposal 直接当可执行或验证真值 |
 
 如果 EmbodiedGen 需要兼容性修正，只能采用以下顺序：
 
@@ -112,15 +112,37 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
 
 ### 3.4 第三组
 
-`AgentScape` 已有：
+`AgentScape` 当前基线已经明显超出本计划最初的“同步 Generator + GLB URL Adapter”阶段。以 `main@df9f9c1`（v1.34.2）复核：
 
-- `HttpAssetGenerator → AssetLibrary → EmbodiedGenAdapter → Asset Admission`。
-- `WorldSpec → resolve/generate → asset admission → compose → instantiate → relations → validate/repair → finalize` canonical pipeline。
-- `ready / provisional / rejected` 已进入 Asset、World 与 Tool outcome；rejected world 会回滚。
-- GLB Compiler、Rapier、Recast、Part/Joint、验证与多步 Agent Runtime 已很成熟。
-- 当前工作区新增 `WorldRetry.js`：只对“catalog 缺失且 generator 可用”的资产生成一次有界 retry proposal；`ToolCallingAgent` 会阻止同一 WorldSpec 在同一任务内原样重复提交。
+- Provider Registry、Connector scoped pairing/capability snapshot 已进入 main；
+- async Generation Job projection/reconcile、Artifact identity/import integrity 已进入 main；
+- verified Artifact → Asset Compiler → Admission 主链已进入 main；
+- EmbodiedGen semantic evidence bridge 已进入 Compiler evidence 路径，但不会被提升成 Runtime truth；
+- Agent-visible async generation 与 Generation Job Center core 已进入 main；
+- 当前 `git stash list` 为空；旧 Live Map 记录的 WorldRevision/backend stash 不可继续当作可恢复实现；
+- Runtime / Physics / Navigation / Interaction / Verification 仍然是 AgentScape 最成熟的事实层；
+- 已知 Runtime correctness debt：`WorldRuntime.mutate()` operation 部分修改后抛错时，通用 transaction 不是 exception-atomic。
 
-关键缺口：当前 Generator 是 120 秒同步 JSON 请求；没有统一客户端/Modal Job 协议、凭据桥、能力发现、进度/取消、认证 Artifact 下载；Adapter 只接受浏览器可达 GLB URL，并用保守 box collider；WorldSpec v1 也不足以直接表达 EmbodiedGen layout/room bundle。目前也没有 `modal-2d→modal-3D` 与 EmbodiedGen Text→3D 两条显式策略。
+因此第三组未来不再以 `AS-11→AS-19` 线性推进，而使用：
+
+> [`group-3-agentscape/07-agent-native-world-architecture-replan.md`](./group-3-agentscape/07-agent-native-world-architecture-replan.md)
+
+新的主轴是：
+
+```text
+World Intent / 世界意图
+        ↓
+World IR / 世界中间表示
+        ↓
+Asset Compiler + Interaction/Rule Compiler
+资产编译 + 交互/规则编译
+        ↓
+World Runtime / 世界运行时
+        ↓
+Verification + Repair / 验证与修复
+```
+
+Provider / Connector / Job / Artifact 从“未来主架构”调整为 **Support Plane / 支撑层**；双生成策略是 Asset Sourcing Strategy / 资产来源策略；Environment/Room 是核心编译链稳定后的内容与规模化能力。
 
 ## 4. 目标架构
 
@@ -162,10 +184,17 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
                                │ versioned result/artifact bundle
                                ▼
 ┌──────────────────────────── AgentScape ──────────────────────────────────┐
-│ Provider Registry → 方案A 2D→SAM→3D / 方案B EmbodiedGen Text→3D          │
-│ → authenticated artifact bytes → Asset Compiler                         │
-│ → Manifest / Part Evidence / Physics → Asset Admission                   │
-│ → WorldSpec / Deterministic Composer → Runtime → World Admission         │
+│ Support: Provider / Connector / Job / Artifact                           │
+│ 支撑层：Provider / Connector / Job / Artifact                            │
+│                              ↓                                           │
+│ World Planner → World IR → Asset + Interaction/Rule Compilation          │
+│ 世界规划器 → 世界 IR → 资产 + 交互/规则编译                              │
+│                              ↓                                           │
+│ World Runtime → Physics Capability → Navigation / Interaction            │
+│ 世界运行时 → 可替换物理能力层 → 导航 / 交互                              │
+│                              ↓                                           │
+│ Verification → Finding → Bounded Repair / IR Revision                    │
+│ 验证 → 问题证据 → 有界修复 / IR 修订                                     │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -253,37 +282,66 @@ TripoSR和其余3D Notebook不进入此Gate。
 6. Room。
 7. 仿真、soft-body、robot-learning 工具（可选后置）。
 
-### Gate 6：AgentScape 双方案单资产接入
+### Gate 6：AgentScape Generation Support Plane / 生成支撑层
 
-完成：
+原“双方案单资产接入”基础大部分已经进入 AgentScape main，因此 Gate 6 重新定义为产品级支撑层验收：
 
-- Connector 配对；
-- Modal provider capability discovery；
-- async generation job；
-- authenticated bytes 下载；
-- AgentScape Compiler；
-- Asset Admission；
-- 单资产 spawn/rollback；
-- 方案A：`modal-2d→SAM→modal-3D→Compiler`；
-- 方案B：`EmbodiedGen Text→3D bundle→Compiler`；
-- 两条策略显式选择，不静默fallback/双计费；
-- 既有图片直接3D入口。
+- real Connector process pair → capability → submit → restart/reconcile → artifact → compile E2E；
+- local Job identity / idempotency / event cursor 不因重启重复计费；
+- Artifact hash/lineage 与 Compiler/Admission truth 保持分层；
+- 方案 A / B 继续显式选择，不静默双跑；
+- AS-10B 只有在 provider 真实提供 model/workflow/optionsSchema metadata 后才进入；
+- Provider success 永远不等于 Asset/World verified。
 
-### Gate 7：AgentScape 生成式世界
+Gate 6 是 AgentScape Support Plane，不再阻塞 World IR contract 的设计工作。
 
-完成：
+### Gate 7：AgentScape World Compilation Core / 世界编译核心
 
-- Prompt→WorldSpec Planner 只生成 proposal；
-- reuse-first/provider policy；
-- 多资产 job fan-out/dedup；
-- deterministic composition；
-- EmbodiedGen layout/world adapter；
-- world admission、bounded repair/regenerate；
-- 保存完整 lineage/seeds/version。
+未来 AgentScape 核心 Gate 细分为 `07` 的 G0～G6：
 
-### Gate 8：生成房间/背景与长期运行
+1. G0 Runtime Truth & Mutation Atomicity；
+2. G1 World IR vNext；
+3. G2A PhysicsBackend Interface Parity；
+4. G2B Interaction & Rule Contract；
+5. G3 Executable Behavior Vertical Slice；
+6. G4 Prompt → World IR → Canonical World Compilation；
+7. G5 Semantic Asset Automation；
+8. G6 World-level Acceptance + Local Repair。
 
-最后处理：动态 Environment Bundle、较大场景 Web budget、导航重建、3DGS 取舍、移动设备性能与长期清理成本。
+完成后的核心闭环必须是：
+
+```text
+Prompt / 用户意图
+    ↓
+World IR / 世界 IR
+    ↓
+Asset + Behavior Compile / 资产+行为编译
+    ↓
+Physics Capability Admission / 物理能力准入
+    ↓
+Runtime / 运行时
+    ↓
+Verification / 验证
+    ↓
+Finding → Constrained Revision / 问题→受约束修订
+```
+
+### Gate 8：Rich Physics & Scale / 丰富物理与规模化
+
+只有 Gate 7 核心 contract 稳定后推进：
+
+- G7 validation-only physics backend；
+- Physics Capability Router / 可替换物理能力路由；
+- 必要时第二 live backend，但必须有 snapshot/restore/coupling/verification；
+- Genesis、PhysX 等只作为候选 backend，不预先承诺为生产依赖；
+- Environment/Room bundle；
+- large-world streaming；
+- offline restore；
+- richer grasp/IK；
+- soft-body / cloth；
+- multi-agent。
+
+AgentScape 不重新发明 solver；它负责编译 PhysicsRequirement、选择已准入能力并管理 truth authority。
 
 ## 6. 统一成功标准
 
@@ -380,7 +438,7 @@ Kaggle Hub 当前 WebP quality 90 可继续作为历史/preview，但正式 2D�
 
 ## 9. 计划维护规则
 
-AgentScape 的实时实现进度不回写成长期架构事实；HEAD/branch/stash、并行 ownership、下一可执行切片与验证证据统一维护在 `group-3-agentscape/04-live-execution-map.md`。具体任务使用 `05-execution-task-spec-template.md`，只有稳定 contract 变化才更新本总路线与 01/02/03 文档。
+AgentScape 的实时实现进度不回写成长期架构事实；HEAD/branch/stash、下一可执行切片与验证证据维护在 `group-3-agentscape/04-live-execution-map.md`。未来核心架构、G0～G8 与多 AI ownership 维护在 `group-3-agentscape/07-agent-native-world-architecture-replan.md`。具体任务使用 `05-execution-task-spec-template.md`；Provider/Artifact 稳定 contract 变化再更新 02/03 与本总路线。
 
 实施时每个里程碑必须更新：
 

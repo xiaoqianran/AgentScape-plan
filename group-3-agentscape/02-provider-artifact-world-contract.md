@@ -1,5 +1,7 @@
 # AgentScape Provider、Artifact 与 World 联合契约
 
+> 本文的 Provider / Connector / Job / Artifact / Admission 契约继续有效。`WorldSpec v2` 部分现在作为 **World IR vNext 的兼容输入**，未来目标结构见 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md)。本文中具体 solver 名只描述当前实现；长期物理真值由被选中的 authoritative PhysicsBackend / 权威物理后端负责。
+
 ## 1. 契约层级
 
 ```text
@@ -202,7 +204,7 @@ provider readiness
 - `open/close` 必须有 part node、joint、collider、limits、explicit targets，并通过 articulation verification；
 - semantic affordance 不满足上述条件时只保留 provenance。
 
-## 10. WorldSpec v2 概念契约
+## 10. Legacy WorldSpec v2 兼容契约 → World IR vNext
 
 ### 顶层
 
@@ -239,7 +241,7 @@ provider readiness
 
 首批保留 ON/NEAR；后续只增加 Runtime 有真实验证的 INSIDE/ATTACHED 等。每个 relation 可有 tolerance/surface/reference，但 Planner 不能发明 unsupported predicate。
 
-## 11. EmbodiedGen Layout → WorldSpec 映射
+## 11. EmbodiedGen Layout → World IR-compatible Proposal / 兼容提议
 
 | EmbodiedGen | WorldSpec/AgentScape | 处理 |
 |---|---|---|
@@ -251,7 +253,7 @@ provider readiness
 | background mesh/GS | environment proposal | 首版 mesh GLB，GS unsupported |
 | scene graph relation | supported relation | unsupported 保留 warning |
 | robot pose | agent/entity proposal | 只在 Runtime 有对应 asset时采用 |
-| layout.json physics | provenance/intent | Rapier 为最终真值 |
+| layout.json physics | provenance/intent | 当前 Runtime 默认 Rapier；长期由已准入 authoritative PhysicsBackend 验证 |
 
 转换结果不是 `world-ready`，只是一份可提交给 canonical pipeline 的 proposal。
 
@@ -275,7 +277,7 @@ provider readiness
 - pano/preview；
 - 3DGS reference。
 
-环境准入：visual/bytes/预算、static collision、world bounds、ground、Rapier attach、Recast rebuild 全部成功；否则替换回滚。
+环境准入：visual/bytes/预算、static collision、world bounds、ground、selected PhysicsBackend admission（当前默认 Rapier）、Recast rebuild 全部成功；否则替换回滚。
 
 ## 13. World Pipeline 扩展顺序
 
@@ -360,7 +362,7 @@ normalize_spec
 
 - child asset jobs 可恢复/去重；
 - layout bundle refs/hash 有效；
-- adapter 生成 WorldSpec v2；
+- adapter 生成 World IR-compatible proposal，经 compatibility normalizer 进入当前 canonical pipeline；
 - blocked pose/relation 导致 bounded repair 或 rejected；
 - rejected scene rollback，但资产保留。
 
