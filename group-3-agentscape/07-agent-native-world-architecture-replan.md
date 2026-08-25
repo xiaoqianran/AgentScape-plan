@@ -1,7 +1,7 @@
 # AgentScape Agent-native World Architecture Replan
 
 > **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**
-> **当前执行基线：AgentScape `main@7dcbdaa`（v1.34.2）**
+> **当前执行基线：AgentScape `main@98fd815`（v1.34.2）**
 > 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。
 > `04-live-execution-map.md` 仍然是 **当前 Git/测试/实现状态账本**；本文负责“接下来按什么架构继续做”。
 
@@ -828,7 +828,7 @@ Single-owner contracts：
 - 现有 Runtime/Physics/Interaction tests 可在安装依赖的干净环境复现；
 - architecture ownership 文件/契约表冻结。
 
-**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `148 files / 652 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
+**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `149 files / 656 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
 
 ### Gate G1 — World IR vNext Contract / 世界 IR 契约
 
@@ -883,9 +883,11 @@ Single-owner contracts：
 - Runtime articulation request contract；
 - no arbitrary JS execution。
 
-下一层 G3 才负责 interaction intent → executable Runtime command，并加入 rule graph 的真实运行语义。
+G3 contract 已进入 canonical pipeline：World IR interaction/rule intent 会在实例化前编译成 revision-bound `WorldBehaviorBundle`，并在 asset resolution 后执行 behavior admission；成功 admission 才装载 RuleGraph。
 
 ### Gate G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
+
+**状态：CANONICAL COMPILE INTEGRATED — through `b22109b` / `main@98fd815`.**
 
 目标：至少一组实体行为完全经过新 contract。
 
@@ -919,6 +921,8 @@ VERIFIED / FAILED
 ```
 
 ### Gate G4 — Planner + Canonical World Compilation / 世界规划与标准编译闭环
+
+**状态：ACTIVE / PARTIAL — canonical asset/behavior/acceptance/revision paths 已进入主链；Planner + PhysicsRequirement admission 未完成。**
 
 这是旧 AS-11/12 的真正替代。
 
@@ -962,7 +966,7 @@ Executable Promotion / 可执行提升
 
 ### Gate G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
 
-**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@7dcbdaa`.**
+**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@98fd815`.**
 
 目标：不仅验证单动作，还验证“用户要求的世界整体成立”。
 
@@ -1195,7 +1199,7 @@ DoD：至少 OPEN/CLOSE + PICKUP/PLACE 能表示 precondition/effect/verifier ta
 
 ### VER-01 — Unified Finding + Acceptance Contract
 
-**状态：FINDING + REPLAY + REVISION RECOMPILE MERGED — `8bf51ef + 117912c + a084ce4 + 1a8a5b0` / `main@7dcbdaa`.**
+**状态：FINDING + REPLAY + REVISION RECOMPILE MERGED — `8bf51ef + 117912c + a084ce4 + 1a8a5b0` / `main@98fd815`.**
 
 Owner：AI-5。
 
