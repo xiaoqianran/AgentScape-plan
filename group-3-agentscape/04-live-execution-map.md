@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。当前 HEAD/commit/tests/实现状态以本文为准；未来目标架构、World IR、可替换物理后端、G0～G8 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。旧 `01` 的 AS-11～19 与本文旧 L6～L8 不再作为未来线性执行顺序。
 >
-> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 7bbe4b2`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
+> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == ca8cab7`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -40,7 +40,7 @@ Physics/Interaction         Compiler/Admission       Provider/Job/Artifact
         │                         │                          │
         └─────────────────────────┼──────────────────────────┘
                                   ▼
-                        main@7bbe4b2 / v1.34.2
+                        main@ca8cab7 / v1.34.2
                                   │
                                   ▼
                   ┌────────────────────────────────┐
@@ -103,7 +103,7 @@ Provider/Connector/Job/Artifact 基础已经不再是所有工作的总 blocker�
 - AS-09 `9523ecc` 已进入并推送共享 main：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
 - AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
 - `9523ecc` 已进入共享 `origin/main`，AS-09 为 `MERGED`；其真值边界继续由后续 AS-10 UI 消费而不重写。
-- 当前已用 `npm ci` 从 lockfile 重装并执行 `npm run check`：`138 files / 601 tests PASS`，Vite 8 production build exit code 0；`npm audit` 为 0 vulnerabilities。Python Asset Compiler 在 Python 3.11 + `trimesh 5.0.0` + `httpx2 2.12.0` 下 `7/7` unittest PASS。
+- 当前已用 `npm ci` 从 lockfile 重装并执行 `npm run check`：`139 files / 607 tests PASS`，Vite 8 production build exit code 0；`npm audit` 为 0 vulnerabilities。Python Asset Compiler 在 Python 3.11 + `trimesh 5.0.0` + `httpx2 2.12.0` 下 `7/7` unittest PASS。
 - `git stash list` 当前为空；旧 WorldRevision/backend stash 记录已降级为历史信息。
 
 当前生成主链已达到：
@@ -129,7 +129,7 @@ Provider/Capability
 - Provider identity/version/health/status/capability discovery/execution binding/result consumer 已正式进入主线；
 - Connector capability snapshot 已通过 C-02 normalize 后写入 Registry；
 - 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
-- 当前完整仓库验证已包含该基础层：`138 files / 601 tests PASS`，production build exit code 0。
+- 当前完整仓库验证已包含该基础层：`139 files / 607 tests PASS`，production build exit code 0。
 
 ### 3.3 Constrained World Revision 历史记录
 
@@ -490,7 +490,7 @@ scene/runtime truth == before
 - `snapshot()` 失败：`mutationOwner` 仍通过 outer `finally` 清空；
 - 无 undo entry；
 - 专项 mutation/history/serializer regression PASS；
-- full suite：`138 files / 601 tests PASS`；production build PASS。
+- full suite：`139 files / 607 tests PASS`；production build PASS。
 
 Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transaction 入口，不混入本次 async `mutate()` 修复提交；若后续需要 cancel/abort contract，单独开 editor transaction slice。
 
@@ -522,18 +522,18 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 - Provider/Job/Artifact/Asset foundation 已在 main；
 - `WorldRuntime.mutate()` exception atomicity 已由 `3a956dc` 闭合并有 regression；
 - partial mutation throw 可 restore before；rollback failure fail-closed；snapshot failure 不泄漏 owner；
-- `npm ci` 后 full suite `138 files / 601 tests PASS`，production build PASS；
+- `npm ci` 后 full suite `139 files / 607 tests PASS`，production build PASS；
 - architecture ownership / truth boundary 已在 `07` 冻结。
 
 ### G1 — World IR vNext Contract / 世界 IR 契约
 
-**状态：READY / NEXT CORE GATE。**
+**状态：COMPLETE — `281e02c` / `main@ca8cab7`.**
 
-需要：revision/provenance、PhysicsRequirement、capability/state、interaction/rule intent、acceptance、compat normalization。
+已完成：revision/provenance、PhysicsRequirement、capability/state intent、interaction/rule intent、acceptance、serialize/parse、legacy WorldSpec normalization；current executable pipeline 对未编译富语义 fail-closed；WorldRetry 保留 revision/provenance 并由 revised IR 生成 nextPlan。
 
 ### G2A — Physics Interface Parity / 物理接口等价抽象
 
-**状态：READY FOR DEPENDENCY AUDIT；Rapier parity implementation 需保持独立 slice。**
+**状态：NEXT CORE SLICE — dependency audit / contract RFC；Rapier parity implementation 保持独立 slice。**
 
 目标是 `PhysicsBackend Contract → RapierAdapter`，第一阶段零主动行为变化，不接 Genesis/PhysX。
 
@@ -545,7 +545,7 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
 
-**状态：BLOCKED BY G1 + G2B + Runtime mapping。**
+**状态：BLOCKED BY G2B + Runtime mapping。**
 
 首批建议 OPEN/CLOSE、PICKUP/PLACE、SWITCH。
 
