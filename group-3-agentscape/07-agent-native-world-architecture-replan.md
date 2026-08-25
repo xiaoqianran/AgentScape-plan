@@ -1,7 +1,7 @@
 # AgentScape Agent-native World Architecture Replan
 
 > **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**
-> **当前执行基线：AgentScape `main@532d42e`（v1.34.2）**
+> **当前执行基线：AgentScape `main@264651d`（v1.34.2）**
 > 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。
 > `04-live-execution-map.md` 仍然是 **当前 Git/测试/实现状态账本**；本文负责“接下来按什么架构继续做”。
 
@@ -828,7 +828,7 @@ Single-owner contracts：
 - 现有 Runtime/Physics/Interaction tests 可在安装依赖的干净环境复现；
 - architecture ownership 文件/契约表冻结。
 
-**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `140 files / 609 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
+**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `141 files / 612 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
 
 ### Gate G1 — World IR vNext Contract / 世界 IR 契约
 
@@ -873,16 +873,17 @@ Single-owner contracts：
 
 可与 G2A 并行。
 
-必须完成：
+已完成第一层 contract：
 
 - capability；
 - precondition；
 - effect；
 - state transition；
-- event/condition/effect；
-- verifier binding；
-- Runtime mutation mapping；
+- verifier target；
+- Runtime articulation request contract；
 - no arbitrary JS execution。
+
+下一层 G3 才负责 interaction intent → executable Runtime command，并加入 rule graph 的真实运行语义。
 
 ### Gate G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
 
