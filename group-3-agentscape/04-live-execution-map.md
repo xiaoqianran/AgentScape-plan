@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。当前 HEAD/commit/tests/实现状态以本文为准；未来目标架构、World IR、可替换物理后端、G0～G8 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。旧 `01` 的 AS-11～19 与本文旧 L6～L8 不再作为未来线性执行顺序。
 >
-> 状态快照：**2026-08-25 21:57 +08:00**。本次复核：AgentScape `main == origin/main == df9f9c1`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
+> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 7bbe4b2`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -40,7 +40,7 @@ Physics/Interaction         Compiler/Admission       Provider/Job/Artifact
         │                         │                          │
         └─────────────────────────┼──────────────────────────┘
                                   ▼
-                        main@df9f9c1 / v1.34.2
+                        main@7bbe4b2 / v1.34.2
                                   │
                                   ▼
                   ┌────────────────────────────────┐
@@ -75,11 +75,11 @@ Provider/Connector/Job/Artifact 基础已经不再是所有工作的总 blocker�
 
 | Slice | 当前状态 | Git/实现身份 | 下一 Gate |
 |---|---|---|---|
-| R-01 Runtime truth stabilization | `MERGED` | `d28980d` 已在当前 `main@df9f9c1` ancestry 中 | G0 继续处理 mutation atomicity |
+| R-01 Runtime truth stabilization | `MERGED` | `d28980d` 已在当前 `main@7bbe4b2` ancestry 中 | Runtime truth baseline 保持 |
 | P-01 Provider Registry | `MERGED` | `0684af0 feat: add provider capability registry` | 已解锁 Connector/Job/Artifact |
 | W-01 WorldSpec Revision | `STALE_HISTORICAL_RECORD` | 当前无 stash、无 `WorldRevision.js` | 由 G1/G4 的 IR revision 重新实现 |
 | B-01 Backend handoff | `STALE_HISTORICAL_RECORD` | 当前无可恢复 backend stash | 如仍需要，Support Plane 重新开 task spec |
-| R-02 / R-ATOMIC-01 Mutation atomicity | `READY` | 当前 `mutate()` catch 只 `history.cancel()`，没有 restore(before) | G0 当前最高 correctness slice |
+| R-02 / R-ATOMIC-01 Mutation atomicity | `MERGED` | `3a956dc`：partial throw → restore(before)；rollback failure fail-closed；snapshot failure 解锁 | G0 已闭合 |
 | C-01 Connector Pairing | `MERGED` | `fefa495 feat: add scoped connector pairing sessions` | 已解锁 C-02/J-01 |
 | C-02 Capability Adapter | `MERGED` | `47470c0 feat: add connector capability snapshots` | 已解锁 J-01 |
 | J-01 Async Job | `MERGED` | `6a08f31 feat: add async generation job projection` | 已解锁 J-02/A-01 |
@@ -96,14 +96,14 @@ Provider/Connector/Job/Artifact 基础已经不再是所有工作的总 blocker�
 
 2026-08-25 21:57 +08:00 重新读取后的代码事实：
 
-- `main == origin/main == df9f9c1`；AS-09/AS-10A 均已推送到共享 main；
-- HEAD：`df9f9c1 feat: add generation job center`；
+- `main == origin/main == 7bbe4b2`；AS-09/AS-10A、依赖升级、CI test-deps、R-ATOMIC-01 均已推送到共享 main；
+- HEAD：`7bbe4b2 merge: make world mutations exception atomic`；
 - `0684af0 / fefa495 / 47470c0 / 6a08f31 / 140acd9 / ac3f996 / 09e63cc / 162a101 / a4b3297 / 571c747 / 5202f6f / 51bf326 / d28980d / 9523ecc` 均已确认在当前本地 main ancestry 中；
 - 因此 Provider / Connector / Async Job / Artifact / single-asset Compiler→Admission 基础层均已进入 `main`，不应再标为 `PLANNED`；
 - AS-09 `9523ecc` 已进入并推送共享 main：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
 - AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
 - `9523ecc` 已进入共享 `origin/main`，AS-09 为 `MERGED`；其真值边界继续由后续 AS-10 UI 消费而不重写。
-- 本次会话尝试重新执行 `npm run check`：`assets:validate` 先通过，但当前 checkout 没有 `node_modules`，随后因 `vitest: not found` 非零退出；因此 `138 files / 598 tests PASS` 仍是 `df9f9c1` 已记录的历史验收证据，本次环境没有独立重跑确认。
+- 当前已用 `npm ci` 从 lockfile 重装并执行 `npm run check`：`138 files / 601 tests PASS`，Vite 8 production build exit code 0；`npm audit` 为 0 vulnerabilities。Python Asset Compiler 在 Python 3.11 + `trimesh 5.0.0` + `httpx2 2.12.0` 下 `7/7` unittest PASS。
 - `git stash list` 当前为空；旧 WorldRevision/backend stash 记录已降级为历史信息。
 
 当前生成主链已达到：
@@ -129,7 +129,7 @@ Provider/Capability
 - Provider identity/version/health/status/capability discovery/execution binding/result consumer 已正式进入主线；
 - Connector capability snapshot 已通过 C-02 normalize 后写入 Registry；
 - 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
-- 当前完整仓库验证已包含该基础层：`138 files / 598 tests PASS`，production build exit code 0。
+- 当前完整仓库验证已包含该基础层：`138 files / 601 tests PASS`，production build exit code 0。
 
 ### 3.3 Constrained World Revision 历史记录
 
@@ -463,9 +463,9 @@ AS-10 尚未完全宣告结束。下一 Gate 为 **AS-10B**：只有当 Provider
 
 当前不存在可恢复 backend stash。若产品部署仍需要 Gateway/health/Docker/CORS handoff，重新按 Support Plane task spec 定义，并先冻结 CORS/security policy。
 
-### R-02 WorldRuntime Mutation Atomicity
+### R-02 / R-ATOMIC-01 WorldRuntime Mutation Atomicity
 
-**状态：READY — 新计划 G0 的最高 Runtime correctness slice。**
+**状态：MERGED — `3a956dc`，已进入 `main@7bbe4b2`。**
 
 目标 contract：
 
@@ -483,7 +483,16 @@ mutationOwner cleared
 scene/runtime truth == before
 ```
 
-此任务必须有最小 reproducer + Runtime regression，不接受只在 caller 再加一个 try/catch workaround。
+已完成：
+
+- partial mutation 后 operation 抛错：`history.cancel()` 后 `restore(before)`；
+- rollback 自身失败：显式 `WORLD_MUTATION_ROLLBACK_FAILED` + `AggregateError`，不冒充恢复成功；
+- `snapshot()` 失败：`mutationOwner` 仍通过 outer `finally` 清空；
+- 无 undo entry；
+- 专项 mutation/history/serializer regression PASS；
+- full suite：`138 files / 601 tests PASS`；production build PASS。
+
+Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transaction 入口，不混入本次 async `mutate()` 修复提交；若后续需要 cancel/abort contract，单独开 editor transaction slice。
 
 ## 6. 并行工作 ownership 规则
 
@@ -508,22 +517,23 @@ scene/runtime truth == before
 
 ### G0 — Runtime Truth & Baseline Freeze / Runtime 真值与基线冻结
 
-**状态：ACTIVE。**
+**状态：COMPLETE。**
 
 - Provider/Job/Artifact/Asset foundation 已在 main；
-- 当前 worktree 的业务代码无 Runtime WIP；
-- `WorldRuntime.mutate()` exception atomicity 仍有已知缺口；
-- 下一 correctness slice：`R-ATOMIC-01`。
+- `WorldRuntime.mutate()` exception atomicity 已由 `3a956dc` 闭合并有 regression；
+- partial mutation throw 可 restore before；rollback failure fail-closed；snapshot failure 不泄漏 owner；
+- `npm ci` 后 full suite `138 files / 601 tests PASS`，production build PASS；
+- architecture ownership / truth boundary 已在 `07` 冻结。
 
 ### G1 — World IR vNext Contract / 世界 IR 契约
 
-**状态：PLANNED，可与 G0 的代码修复并行做 contract RFC。**
+**状态：READY / NEXT CORE GATE。**
 
 需要：revision/provenance、PhysicsRequirement、capability/state、interaction/rule intent、acceptance、compat normalization。
 
 ### G2A — Physics Interface Parity / 物理接口等价抽象
 
-**状态：PLANNED AFTER mutation contract；dependency audit 可先行。**
+**状态：READY FOR DEPENDENCY AUDIT；Rapier parity implementation 需保持独立 slice。**
 
 目标是 `PhysicsBackend Contract → RapierAdapter`，第一阶段零主动行为变化，不接 Genesis/PhysX。
 
@@ -574,7 +584,6 @@ Environment/Room、large world、soft body、multi-agent 在核心编译链稳�
 按 `07`，第一批建议：
 
 ```text
-AI-4  R-ATOMIC-01  WorldRuntime Mutation Atomicity
 AI-1  IR-01        World IR Contract RFC + Compatibility Normalizer
 AI-3  BEH-01       Capability / State / Rule Contract
 AI-5  VER-01       Unified Finding + Acceptance Contract
@@ -583,7 +592,7 @@ AI-7  UX-01        IR/Finding/Verification observability requirements
 AI-8  INT-01       Cross-contract test matrix
 ```
 
-`PHY-01 PhysicsBackend Contract + Rapier Parity Adapter` 在 R-ATOMIC-01 mutation contract 明确后进入代码实现；在此之前可以做 dependency audit 与接口 RFC。
+`R-ATOMIC-01` 已 merged。`PHY-01 PhysicsBackend Contract + Rapier Parity Adapter` 现在允许进入 dependency audit / contract RFC；实际 adapter 迁移仍需保持零主动 physics behavior change。
 
 AS-10B 继续是 **conditional**：只有 Provider capability 真实提供 richer model/workflow/optionsSchema metadata 才做 schema-driven UI，不允许 UI 自行硬编码 provider catalog。
 
@@ -606,11 +615,11 @@ AS-10B 继续是 **conditional**：只有 Provider capability 真实提供 riche
 
 下一次读取 AgentScape 时优先回答：
 
-1. `R-ATOMIC-01` 是否已经用最小 reproducer + regression 修复 `WorldRuntime.mutate()` exception atomicity？
-2. `IR-01` 是否已经形成 World IR vNext contract，并兼容当前 WorldSpec normalize？
+1. `IR-01` 是否已经形成 World IR vNext contract，并兼容当前 WorldSpec normalize？
+2. `PHY-01` dependency audit 是否已经枚举全部 Rapier-specific coupling 并冻结 backend-neutral query/snapshot contract？
 3. `BEH-01` 是否把 capability/precondition/effect/state/verifier target 从散落逻辑收敛成 typed contract？
 4. `VER-01` 是否统一 action/world finding、acceptance linkage 与 stale-evidence identity？
-5. `PHY-01` 的 Rapier dependency audit 是否证明上层模块可以在不改变行为的前提下转向 PhysicsBackend contract？
+5. `BEH-01` / `VER-01` 是否能与 IR-01 contract 对齐而不产生第二份 state/truth？
 6. real Connector 是否完成 pair → capability → submit → restart/reconcile → artifact → compile 产品 E2E？
 7. Provider 是否真实提供 model/workflow/optionsSchema；若没有，AS-10B 保持 blocked/conditional。
 8. 是否有任何 AI 新增第二份 Runtime/Physics/World truth；若有，优先阻断而不是继续叠功能。

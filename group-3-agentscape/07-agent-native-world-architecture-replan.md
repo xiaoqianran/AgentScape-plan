@@ -1,8 +1,8 @@
 # AgentScape Agent-native World Architecture Replan
 
-> **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**  
-> **基线：AgentScape `main@df9f9c1`（v1.34.2）**  
-> 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。  
+> **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**
+> **当前执行基线：AgentScape `main@7bbe4b2`（v1.34.2）**
+> 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。
 > `04-live-execution-map.md` 仍然是 **当前 Git/测试/实现状态账本**；本文负责“接下来按什么架构继续做”。
 
 ---
@@ -609,7 +609,7 @@ Provider / Connector / Job / Artifact、Editor、Persistence、Environment 不�
 
 ### 7.1 Provider 链已经不再是主架构 blocker
 
-当前 `main@df9f9c1` 已有：
+当前 `main@7bbe4b2` 已有：
 
 - Provider Registry；
 - Connector scoped session；
@@ -828,7 +828,7 @@ Single-owner contracts：
 - 现有 Runtime/Physics/Interaction tests 可在安装依赖的干净环境复现；
 - architecture ownership 文件/契约表冻结。
 
-**当前最高 correctness debt：R-02 Mutation Atomicity。**
+**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `138 files / 601 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
 
 ### Gate G1 — World IR vNext Contract / 世界 IR 契约
 
@@ -1127,6 +1127,8 @@ AgentScape verification
 
 ### R-ATOMIC-01 — WorldRuntime Mutation Atomicity
 
+**状态：MERGED — `3a956dc` / `main@7bbe4b2`。**
+
 Owner：AI-4 Runtime。
 
 目标：
@@ -1145,7 +1147,7 @@ mutation owner cleared
 runtime == before
 ```
 
-DoD：最小 reproducer + regression + no caller workaround。
+DoD：最小 reproducer + regression + no caller workaround。**已完成**：partial throw rollback、rollback failure fail-closed、snapshot failure unlock；full suite 601 tests PASS。
 
 ### IR-01 — World IR Contract RFC + Compatibility Normalizer
 
@@ -1169,7 +1171,7 @@ Owner：AI-1。
 
 Owner：AI-4。
 
-前置：R-ATOMIC-01 contract 已明确；可以先做 dependency audit/contract draft。
+前置已满足：R-ATOMIC-01 merged。下一步先做 dependency audit/contract draft，再做 Rapier parity adapter。
 
 DoD：
 
