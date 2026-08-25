@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。当前 HEAD/commit/tests/实现状态以本文为准；未来目标架构、World IR、可替换物理后端、G0～G8 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。旧 `01` 的 AS-11～19 与本文旧 L6～L8 不再作为未来线性执行顺序。
 >
-> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 98fd815`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
+> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 8253f7d`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -40,7 +40,7 @@ Physics/Interaction         Compiler/Admission       Provider/Job/Artifact
         │                         │                          │
         └─────────────────────────┼──────────────────────────┘
                                   ▼
-                        main@98fd815 / v1.34.2
+                        main@8253f7d / v1.34.2
                                   │
                                   ▼
                   ┌────────────────────────────────┐
@@ -103,7 +103,7 @@ Provider/Connector/Job/Artifact 基础已经不再是所有工作的总 blocker�
 - AS-09 `9523ecc` 已进入并推送共享 main：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
 - AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
 - `9523ecc` 已进入共享 `origin/main`，AS-09 为 `MERGED`；其真值边界继续由后续 AS-10 UI 消费而不重写。
-- 当前已用 `npm ci` 从 lockfile 重装并执行 `npm run check`：`149 files / 656 tests PASS`，Vite 8 production build exit code 0；`npm audit` 为 0 vulnerabilities。Python Asset Compiler 在 Python 3.11 + `trimesh 5.0.0` + `httpx2 2.12.0` 下 `7/7` unittest PASS。
+- 当前已用 `npm ci` 从 lockfile 重装并执行 `npm run check`：`150 files / 662 tests PASS`，Vite 8 production build exit code 0；`npm audit` 为 0 vulnerabilities。Python Asset Compiler 在 Python 3.11 + `trimesh 5.0.0` + `httpx2 2.12.0` 下 `7/7` unittest PASS。
 - `git stash list` 当前为空；旧 WorldRevision/backend stash 记录已降级为历史信息。
 
 当前生成主链已达到：
@@ -129,7 +129,7 @@ Provider/Capability
 - Provider identity/version/health/status/capability discovery/execution binding/result consumer 已正式进入主线；
 - Connector capability snapshot 已通过 C-02 normalize 后写入 Registry；
 - 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
-- 当前完整仓库验证已包含该基础层：`149 files / 656 tests PASS`，production build exit code 0。
+- 当前完整仓库验证已包含该基础层：`150 files / 662 tests PASS`，production build exit code 0。
 
 ### 3.3 Constrained World Revision 历史记录
 
@@ -490,7 +490,7 @@ scene/runtime truth == before
 - `snapshot()` 失败：`mutationOwner` 仍通过 outer `finally` 清空；
 - 无 undo entry；
 - 专项 mutation/history/serializer regression PASS；
-- full suite：`149 files / 656 tests PASS`；production build PASS。
+- full suite：`150 files / 662 tests PASS`；production build PASS。
 
 Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transaction 入口，不混入本次 async `mutate()` 修复提交；若后续需要 cancel/abort contract，单独开 editor transaction slice。
 
@@ -522,7 +522,7 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 - Provider/Job/Artifact/Asset foundation 已在 main；
 - `WorldRuntime.mutate()` exception atomicity 已由 `3a956dc` 闭合并有 regression；
 - partial mutation throw 可 restore before；rollback failure fail-closed；snapshot failure 不泄漏 owner；
-- `npm ci` 后 full suite `149 files / 656 tests PASS`，production build PASS；
+- `npm ci` 后 full suite `150 files / 662 tests PASS`，production build PASS；
 - architecture ownership / truth boundary 已在 `07` 冻结。
 
 ### G1 — World IR vNext Contract / 世界 IR 契约
@@ -535,25 +535,25 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 **状态：COMPLETE — `9a2135e` / `main@532d42e`.**
 
-已完成：`PhysicsBackend` contract、`RapierPhysicsBackend` adapter、World lifecycle/body/collider/joint/shape/ray/backend-owned construction；`PhysicsSystem` 不再直接 import Rapier；现有 physics/articulation/navigation/recovery full suite `149 files / 656 tests PASS`。未完成：真正 snapshot/restore contract 的跨后端实现、validation-only backend、第二 live backend、cross-backend coupling。
+已完成：`PhysicsBackend` contract、`RapierPhysicsBackend` adapter、World lifecycle/body/collider/joint/shape/ray/backend-owned construction；`PhysicsSystem` 不再直接 import Rapier；现有 physics/articulation/navigation/recovery full suite `150 files / 662 tests PASS`。未完成：真正 snapshot/restore contract 的跨后端实现、validation-only backend、第二 live backend、cross-backend coupling。
 
 ### G2B — Interaction & Rule Contract / 交互与规则契约
 
 **状态：COMPLETE — `1a60ada` / `main@264651d`.**
 
-已完成 InteractionContract v1：legacy Manifest actions/part targets → capability/precondition/effect/stateTransition/verifierTarget；Runtime articulation request 消费 typed contract；World IR interaction/rule intent 现已进入 canonical behavior compilation 与 manifest capability admission；full suite `149 files / 656 tests PASS`。
+已完成 InteractionContract v1：legacy Manifest actions/part targets → capability/precondition/effect/stateTransition/verifierTarget；Runtime articulation request 消费 typed contract；World IR interaction/rule intent 现已进入 canonical behavior compilation 与 manifest capability admission；full suite `150 files / 662 tests PASS`。
 
 ### G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
 
-**状态：CANONICAL COMPILE INTEGRATED — `e039181 + d0b190b + 66506af + 63e053d + b22109b` / `main@98fd815`.**
+**状态：CANONICAL COMPILE INTEGRATED — `e039181 + d0b190b + 66506af + 63e053d + b22109b` / `main@8253f7d`.**
 
-已完成 OPEN/CLOSE、PICKUP/PLACE、SWITCH + RuleGraph 三类纵向切片；`WorldBehaviorCompiler` 现把 `WorldIR.interactions/rules` 在任何实例化前编译成 revision-bound behavior bundle，并在 asset resolution 后执行 manifest capability admission；成功 world admission 才装载 RuleGraph 到 Runtime。full suite `149 files / 656 tests PASS`。后续继续 behavior/state persistence、冲突优先级与更多 command kinds。
+已完成 OPEN/CLOSE、PICKUP/PLACE、SWITCH + RuleGraph 三类纵向切片；`WorldBehaviorCompiler` 现把 `WorldIR.interactions/rules` 在任何实例化前编译成 revision-bound behavior bundle，并在 asset resolution 后执行 manifest capability admission；成功 world admission 才装载 RuleGraph 到 Runtime。full suite `150 files / 662 tests PASS`。后续继续 behavior/state persistence、冲突优先级与更多 command kinds。
 
 ### G4 — Planner + Canonical World Compilation / 世界规划与标准编译
 
-**状态：ACTIVE / PARTIAL — canonical behavior compilation 已进入主链；Planner + physics requirement admission 仍待。**
+**状态：ACTIVE / PARTIAL — asset + behavior + physics + acceptance + revision/recompile 已进入 canonical 主链；Planner 仍待。**
 
-这是旧 AS-11/12 的替代：Prompt → strict World IR → asset/behavior/physics admission → compose → runtime → verify → constrained revision。当前 asset + behavior + acceptance + revision/recompile 主链已具备，下一核心缺口是 prompt→strict World IR planner、PhysicsRequirement admission 与 richer state persistence。
+这是旧 AS-11/12 的替代：Prompt → strict World IR → asset/behavior/physics admission → compose → runtime → verify → constrained revision。当前 asset + behavior + physics + acceptance + revision/recompile 主链已具备。`WorldPhysicsAdmission` 会把 bodyClass/requiredCapabilities/executionMode/qualityPolicy 编译成 backend-neutral requirement，并依据当前 authoritative backend capability/executionMode/quality 声明 fail-closed；articulated 还要求 joint asset evidence。当前 full suite `150 files / 662 tests PASS`。下一核心缺口是 prompt→strict World IR planner 与 richer state/behavior persistence。
 
 ### G5 — Semantic Asset Automation / 语义资产自动化
 
@@ -563,9 +563,9 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
 
-**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@98fd815`.**
+**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@8253f7d`.**
 
-动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。Acceptance replay 已落地：restore 的 historical bundle 只有在 current revision 一致并重新跑同一 criteria 后才能生成新的 current bundle；state drift / revision mismatch 均 fail-closed 并产生新的 acceptance Finding。Affected-IR handoff 与 constrained revision 第一层已落地：pipeline rejection 可生成 `world-revision-context`，Finding 只决定 seed entity，关联对象仅作 context；proposal 只允许 bounded `set-position` / `set-generation` edit，且 apply 前必须显式 changed-plan gate；生成 child revision 并把 Finding IDs 写入 provenance evidenceRefs。当前 full suite `149 files / 656 tests PASS`。Accepted proposal → canonical recompile 已落地：显式 changed-plan gate 在任何 mutation 前校验；通过后 snapshot → clear old world → canonical pipeline(child IR) → fresh verification/acceptance；fresh admission rejected 或异常自动 restore 原 scene。
+动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。Acceptance replay 已落地：restore 的 historical bundle 只有在 current revision 一致并重新跑同一 criteria 后才能生成新的 current bundle；state drift / revision mismatch 均 fail-closed 并产生新的 acceptance Finding。Affected-IR handoff 与 constrained revision 第一层已落地：pipeline rejection 可生成 `world-revision-context`，Finding 只决定 seed entity，关联对象仅作 context；proposal 只允许 bounded `set-position` / `set-generation` edit，且 apply 前必须显式 changed-plan gate；生成 child revision 并把 Finding IDs 写入 provenance evidenceRefs。当前 full suite `150 files / 662 tests PASS`。Accepted proposal → canonical recompile 已落地：显式 changed-plan gate 在任何 mutation 前校验；通过后 snapshot → clear old world → canonical pipeline(child IR) → fresh verification/acceptance；fresh admission rejected 或异常自动 restore 原 scene。
 
 ### G7 — Multi-backend Physics / 多物理后端
 
