@@ -112,7 +112,7 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
 
 ### 3.4 第三组
 
-`AgentScape` 当前基线已经明显超出本计划最初的“同步 Generator + GLB URL Adapter”阶段。以 `main@0729970`（v1.34.2）复核：
+`AgentScape` 当前基线已经明显超出本计划最初的“同步 Generator + GLB URL Adapter”阶段。以 `main@70fb2f1`（v1.34.2）复核：
 
 - Provider Registry、Connector scoped pairing/capability snapshot 已进入 main；
 - async Generation Job projection/reconcile、Artifact identity/import integrity 已进入 main；

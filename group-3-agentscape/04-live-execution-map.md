@@ -2,7 +2,7 @@
 
 > 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。当前 HEAD/commit/tests/实现状态以本文为准；未来目标架构、World IR、可替换物理后端、G0～G8 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。旧 `01` 的 AS-11～19 与本文旧 L6～L8 不再作为未来线性执行顺序。
 >
-> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 0729970`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
+> 状态快照：**2026-08-26 +08:00**。本次复核：AgentScape `main == origin/main == 70fb2f1`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
 
 ## 1. 为什么需要这份 Live Map
 
@@ -40,7 +40,7 @@ Physics/Interaction         Compiler/Admission       Provider/Job/Artifact
         │                         │                          │
         └─────────────────────────┼──────────────────────────┘
                                   ▼
-                        main@0729970 / v1.34.2
+                        main@70fb2f1 / v1.34.2
                                   │
                                   ▼
                   ┌────────────────────────────────┐
@@ -545,7 +545,7 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
 
-**状态：PARTIAL COMPLETE — `e039181 + d0b190b + 66506af + 63e053d` / `main@0729970`.**
+**状态：PARTIAL COMPLETE — `e039181 + d0b190b + 66506af + 63e053d` / `main@70fb2f1`.**
 
 已完成 OPEN/CLOSE、PICKUP/PLACE、SWITCH + RuleGraph 三类纵向切片：`BehaviorCompiler` 生成 typed `RuntimeCommand`；SWITCH 通过 `WorldRuntime.mutate()` 应用显式 state transition；RuleGraph 仅允许 typed `set-state` effect；full suite `145 files / 630 tests PASS`。后续继续扩大 rule graph 事件集、冲突优先级与 World-level acceptance。
 
