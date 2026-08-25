@@ -1,7 +1,7 @@
 # AgentScape Agent-native World Architecture Replan
 
 > **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**
-> **当前执行基线：AgentScape `main@3f19fbd`（v1.34.2）**
+> **当前执行基线：AgentScape `main@7dcbdaa`（v1.34.2）**
 > 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。
 > `04-live-execution-map.md` 仍然是 **当前 Git/测试/实现状态账本**；本文负责“接下来按什么架构继续做”。
 
@@ -828,7 +828,7 @@ Single-owner contracts：
 - 现有 Runtime/Physics/Interaction tests 可在安装依赖的干净环境复现；
 - architecture ownership 文件/契约表冻结。
 
-**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `147 files / 648 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
+**状态：COMPLETE。** `R-ATOMIC-01` 已由 `3a956dc` 闭合；`npm ci` 后 `148 files / 652 tests PASS`，production build PASS。下一核心 Gate 为 G1 / IR-01。
 
 ### Gate G1 — World IR vNext Contract / 世界 IR 契约
 
@@ -961,6 +961,8 @@ Executable Promotion / 可执行提升
 ```
 
 ### Gate G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
+
+**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@7dcbdaa`.**
 
 目标：不仅验证单动作，还验证“用户要求的世界整体成立”。
 
@@ -1193,7 +1195,7 @@ DoD：至少 OPEN/CLOSE + PICKUP/PLACE 能表示 precondition/effect/verifier ta
 
 ### VER-01 — Unified Finding + Acceptance Contract
 
-**状态：FINDING + REPLAY MERGED — `8bf51ef + 117912c` / `main@3f19fbd`.**
+**状态：FINDING + REPLAY + REVISION RECOMPILE MERGED — `8bf51ef + 117912c + a084ce4 + 1a8a5b0` / `main@7dcbdaa`.**
 
 Owner：AI-5。
 
