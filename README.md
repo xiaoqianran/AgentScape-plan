@@ -23,7 +23,8 @@
    - [`group-2-embodiedgen/03-workflow-contract-and-acceptance.md`](./group-2-embodiedgen/03-workflow-contract-and-acceptance.md)
    - [`group-2-embodiedgen/04-live-execution-state.md`](./group-2-embodiedgen/04-live-execution-state.md)：实时事实、下一任务、验证 Gate；每次实际开发/Modal 验证后优先同步这里。
 6. 第三组：`AgentScape`
-   - [`group-3-agentscape/01-AgentScape-integration-plan.md`](./group-3-agentscape/01-AgentScape-integration-plan.md)
+   - [`group-3-agentscape/07-agent-native-world-architecture-replan.md`](./group-3-agentscape/07-agent-native-world-architecture-replan.md)：**当前未来执行权威计划**；使命、World IR、五大核心、可替换物理后端、G0～G8 与多 AI ownership。
+   - [`group-3-agentscape/01-AgentScape-integration-plan.md`](./group-3-agentscape/01-AgentScape-integration-plan.md)：历史 Integration 分解；AS-00～10 仍可查，AS-11～19 的旧线性顺序已被 07 取代。
    - [`group-3-agentscape/02-provider-artifact-world-contract.md`](./group-3-agentscape/02-provider-artifact-world-contract.md)
    - [`group-3-agentscape/03-dual-generation-strategy-plan.md`](./group-3-agentscape/03-dual-generation-strategy-plan.md)
    - [`group-3-agentscape/04-live-execution-map.md`](./group-3-agentscape/04-live-execution-map.md)：动态实现账本、下一任务切片、依赖 Gate 与并行 ownership；实施 AgentScape 前优先读取。
@@ -43,13 +44,14 @@ Kaggle 2D 原型 → modal-build → modal-2d → modal-2d-client ┐
 EmbodiedGen（只读）→ modal-build阶段化工作流 ────────────────────────┼→ 方案B：Text→3D bundle
                                                                     ▼
                                                               AgentScape
-                                               → Compiler / Asset Admission
-                                               → WorldSpec / Runtime / Validation
+                                               → Asset Compiler / Admission
+                                               → World IR / Behavior Compile
+                                               → Runtime / Physics Capability / Verification
 ```
 
 ## 本轮 CodeGraph 阅读基线
 
-计划基于 2026-08-23 工作区中的实际代码，而不是只按 README 推断：
+原始跨项目 CodeGraph 基线来自 2026-08-23 工作区；**AgentScape 已在 2026-08-25 按 `main@df9f9c1` 重新复核并重规划**。其未来架构以 07 为准，其余项目表格仍按各自最近一次索引事实理解：
 
 | 项目 | CodeGraph 索引 | 主要读取范围 |
 |---|---:|---|

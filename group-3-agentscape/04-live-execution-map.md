@@ -1,12 +1,12 @@
 # AgentScape Live Execution Map
 
-> 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。它不替代 `00-master-roadmap.md`、`01-AgentScape-integration-plan.md` 或跨项目 contract；稳定文档回答“最终系统要长什么样”，本文件回答“当前代码已经做到哪里、下一项具体工作是什么、谁可以做、依赖什么、如何验收”。
+> 这是 **AgentScape 当前实现状态与下一步任务的动态执行文档**。当前 HEAD/commit/tests/实现状态以本文为准；未来目标架构、World IR、可替换物理后端、G0～G8 与多 AI ownership 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为权威。旧 `01` 的 AS-11～19 与本文旧 L6～L8 不再作为未来线性执行顺序。
 >
-> 状态快照：**2026-08-25 01:54 +08:00**。任何实施前必须重新读取 AgentScape `git status`、HEAD、分支、stash 与 CodeGraph；不要把本文件里的 commit/status 当永久事实。
+> 状态快照：**2026-08-25 21:57 +08:00**。本次复核：AgentScape `main == origin/main == df9f9c1`，`git stash list` 为空；任何实施前仍必须重新读取 `git status`、HEAD、分支、stash 与关键代码。
 
 ## 1. 为什么需要这份 Live Map
 
-AgentScape 已经进入多条并行工作流：Runtime truth 修复、1.35 WorldRevision、Backend productization、Provider/Connector/Artifact 链，以及未来的双生成策略。如果仍只用“AS-01～AS-19”表示进度，会产生四类误判：
+AgentScape 已经从 Provider/Connector 基础建设阶段进入 **World Compilation Architecture / 世界编译架构** 阶段。当前并行工作应围绕 Runtime correctness、World IR、Interaction/Rule、PhysicsBackend abstraction、Verification/Repair 与 Provider product E2E 展开。如果仍只用“AS-01～AS-19”表示进度，会产生四类误判：
 
 1. **文档已有 ≠ main 已实现**；
 2. **branch 已提交 ≠ main 已合并**；
@@ -29,92 +29,57 @@ AgentScape 已经进入多条并行工作流：Runtime truth 修复、1.35 World
 ## 2. 当前实时架构阶段
 
 ```text
-                           AgentScape 当前代码事实
-                 ┌─────────────────────────────────┐
-                 │ Runtime / Physics / Interaction │
-                 │ Generated World / Retry         │
-                 │ Provider/Connector/Job/Artifact (merged)│
-                 │ 1.35 WorldRevision stash        │
-                 │ Backend handoff stash           │
-                 └───────────────┬─────────────────┘
-                                 │
-                                 │ Git / CodeGraph / Tests
-                                 v
-                 ┌─────────────────────────────────┐
-                 │      LIVE IMPLEMENTATION MAP    │
-                 │ merged / branch / dirty / stash │
-                 │ dependency / gate / acceptance  │
-                 └───────────────┬─────────────────┘
-                                 │
-                                 v
-        ┌─────────────────────────────────────────────────────┐
-        │                AgentScape-plan                      │
-        │                                                     │
-        │ Architecture Contracts  -> stable target            │
-        │ Concrete Work Slices    -> next executable tasks    │
-        │ Dependency Gates        -> when work may start       │
-        │ Acceptance Evidence     -> what counts as done       │
-        │ Live Status             -> what is true right now    │
-        └────────────────────────┬────────────────────────────┘
-                                 │
-                ┌────────────────┴────────────────┐
-                │                                 │
-                v                                 v
-      Runtime / Truth Track               Generation Platform Track
-  ┌──────────────────────────┐        ┌────────────────────────────┐
-  │ placement stability      │        │ Provider Registry          │
-  │ carry state              │        │ Connector                  │
-  │ articulation truth       │        │ Async Job                  │
-  │ agent sequencing         │        │ Artifact Importer          │
-  └────────────┬─────────────┘        └──────────────┬─────────────┘
-               │                                      │
-               └──────────────────┬───────────────────┘
-                                  v
-                         1.35 Integration Gate
-                     ┌────────────────────────┐
-                     │ Runtime truth stable   │
-                     │ Provider contract      │
-                     │ WorldRevision          │
-                     │ Backend policy         │
-                     │ Full regression        │
-                     └───────────┬────────────┘
-                                 v
-                     Providerized Generated World
-                                 │
-                  ┌──────────────┴──────────────┐
-                  v                             v
-          Strategy A                       Strategy B
-        2D -> SAM -> 3D                  EmbodiedGen
-                  \                         /
-                   \                       /
-                    v                     v
-                      Compiler / Admission
-                              │
-                              v
-                         WorldSpec v2
-                              │
-                              v
-                  Deterministic World Runtime
-                              │
-                              v
-                      Verified World Task
+                         AgentScape current / 当前
+                                  │
+        ┌─────────────────────────┼──────────────────────────┐
+        │                         │                          │
+        ▼                         ▼                          ▼
+Runtime Truth               Asset Truth              Generation Support
+运行时真值                  资产真值                 生成支撑
+Physics/Interaction         Compiler/Admission       Provider/Job/Artifact
+        │                         │                          │
+        └─────────────────────────┼──────────────────────────┘
+                                  ▼
+                        main@df9f9c1 / v1.34.2
+                                  │
+                                  ▼
+                  ┌────────────────────────────────┐
+                  │ New Architecture Gates / 新门 │
+                  │                                │
+                  │ G0 Runtime correctness         │
+                  │ G1 World IR                    │
+                  │ G2 Physics + Behavior Contract │
+                  │ G3 Executable Behavior         │
+                  │ G4 Canonical World Compilation │
+                  │ G5 Semantic Asset Automation   │
+                  │ G6 World Acceptance + Repair   │
+                  └───────────────┬────────────────┘
+                                  │
+                                  ▼
+                       Verified World System
+                         已验证世界系统
+                                  │
+                     ┌────────────┴────────────┐
+                     ▼                         ▼
+              G7 Multi-backend          G8 Scale / Rich World
+              多物理后端                规模化 / 丰富世界
 ```
 
-当前工程阶段定义为：
+当前工程阶段重新定义为：
 
-> **Late Core / Early Productization -> Providerized Generated World Foundation**
+> **Late Core / Early World-Compiler Productization / 核心后期、世界编译器产品化早期。**
 
-Runtime 的主要问题已经从“有没有能力”转向“能力真值是否稳定、失败是否可恢复”；生成侧的主要问题已经从“能不能请求 generator”转向“Provider/Job/Artifact 是否具备正式产品契约”。
+Provider/Connector/Job/Artifact 基础已经不再是所有工作的总 blocker。当前最重要的是把已经很强的 Runtime/Compiler/Verification 能力收敛成稳定的 **World IR + Behavior Contract + PhysicsBackend Contract + World-level Acceptance**。
 
 ## 3. 2026-08-25 当前实现账本
 
 | Slice | 当前状态 | Git/实现身份 | 下一 Gate |
 |---|---|---|---|
-| R-01 Runtime truth stabilization | `MERGED` | 当前 `main@d28980d` 已包含此前 Runtime truth 修复 | 继续按独立 Runtime track 处理剩余 correctness |
+| R-01 Runtime truth stabilization | `MERGED` | `d28980d` 已在当前 `main@df9f9c1` ancestry 中 | G0 继续处理 mutation atomicity |
 | P-01 Provider Registry | `MERGED` | `0684af0 feat: add provider capability registry` | 已解锁 Connector/Job/Artifact |
-| W-01 WorldSpec Revision | `STASH_PROTOTYPE` | 历史 stash prototype；未作为当前正式能力 | 独立恢复/重新验证 |
-| B-01 Backend handoff | `STASH_PROTOTYPE` | 历史 stash prototype；未作为当前正式能力 | CORS/production boundary 独立收口 |
-| R-02 Mutation atomicity | `PLANNED` | 当前 Live Map 仍无新的 merged fix 证据 | 独立 Runtime Gate |
+| W-01 WorldSpec Revision | `STALE_HISTORICAL_RECORD` | 当前无 stash、无 `WorldRevision.js` | 由 G1/G4 的 IR revision 重新实现 |
+| B-01 Backend handoff | `STALE_HISTORICAL_RECORD` | 当前无可恢复 backend stash | 如仍需要，Support Plane 重新开 task spec |
+| R-02 / R-ATOMIC-01 Mutation atomicity | `READY` | 当前 `mutate()` catch 只 `history.cancel()`，没有 restore(before) | G0 当前最高 correctness slice |
 | C-01 Connector Pairing | `MERGED` | `fefa495 feat: add scoped connector pairing sessions` | 已解锁 C-02/J-01 |
 | C-02 Capability Adapter | `MERGED` | `47470c0 feat: add connector capability snapshots` | 已解锁 J-01 |
 | J-01 Async Job | `MERGED` | `6a08f31 feat: add async generation job projection` | 已解锁 J-02/A-01 |
@@ -129,7 +94,7 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 
 ### 3.1 AgentScape main
 
-2026-08-25 01:54 +08:00 重新读取后的代码事实：
+2026-08-25 21:57 +08:00 重新读取后的代码事实：
 
 - `main == origin/main == df9f9c1`；AS-09/AS-10A 均已推送到共享 main；
 - HEAD：`df9f9c1 feat: add generation job center`；
@@ -138,6 +103,8 @@ Runtime 的主要问题已经从“有没有能力”转向“能力真值是否
 - AS-09 `9523ecc` 已进入并推送共享 main：`GenerationOrchestrator`、Runtime generation 接线、7 个 Agent skills、generation policy/status 语义以及两组 generation tests；
 - AS-09 在 `9523ecc` 上重新验证：完整 `npm test` 为 `136 files / 590 tests PASS`；`npm run assets:validate` PASS；`npm run build` exit code 0；此前 generation/Provider/Connector/Job/Artifact/Compiler 扩大回归为 `20 files / 192 tests PASS`；
 - `9523ecc` 已进入共享 `origin/main`，AS-09 为 `MERGED`；其真值边界继续由后续 AS-10 UI 消费而不重写。
+- 本次会话尝试重新执行 `npm run check`：`assets:validate` 先通过，但当前 checkout 没有 `node_modules`，随后因 `vitest: not found` 非零退出；因此 `138 files / 598 tests PASS` 仍是 `df9f9c1` 已记录的历史验收证据，本次环境没有独立重跑确认。
+- `git stash list` 当前为空；旧 WorldRevision/backend stash 记录已降级为历史信息。
 
 当前生成主链已达到：
 
@@ -164,57 +131,37 @@ Provider/Capability
 - 后续任务不得重新实现第二套 Provider Registry，也不得把 provider 私有 schema 直接交给 Agent/UI；
 - 当前完整仓库验证已包含该基础层：`138 files / 598 tests PASS`，production build exit code 0。
 
-### 3.3 1.35 Constrained WorldSpec Revision
+### 3.3 Constrained World Revision 历史记录
 
-状态：**`STASH_PROTOTYPE`**。
+状态：**`STALE_HISTORICAL_RECORD`**，不可作为代码依赖。
 
-已确认 stash 中存在 `WorldRevision.js`、测试及 `ToolCallingAgent`/core skill 接线。真实控制流是：
+旧 Live Map 曾记录一个 `WorldRevision.js` stash prototype；本次复核 `git stash list` 为空，当前代码树也没有 `WorldRevision.js`。因此不能再描述成“可以恢复的 stash prototype”。
 
-```text
-world pipeline rejected
-        |
-        v
-restore(before)
-        |
-        v
-bounded retry possible ?
-    |              |
-   yes             no
-    |              |
-    v              v
-retry plan   buildWorldRevisionProposal
-                   |
-                   v
-          world-rejected.revision
-                   |
-                   v
-                Planner
-```
-
-它保持：
-
-- `automatic = false`；
-- `autoApply = false`；
-- Runtime 只提供“哪个 constraint 有证据可修改”的 revision proposal；
-- 不允许 Runtime 偷偷放宽用户 WorldSpec。
-
-正式化前不能被其它任务当作已存在 API。
-
-### 3.4 Backend 1.35 handoff
-
-状态：**`STASH_PROTOTYPE`**。
-
-已有 Agent Gateway / Asset Compiler production boundary、Docker、health、structured errors、timeout/CORS 等实现，但与当前 main 存在一个必须先决策的 contract 冲突：
+仍然有效的是当时验证出的设计原则：
 
 ```text
-current main empty allowlist
-        -> browser origins permissive
-
-backend stash empty allowlist
-        -> non-local browser origins denied
+world rejected / 世界被拒绝
+        ↓
+restore before / 恢复前态
+        ↓
+finding evidence / 问题证据
+        ↓
+constrained IR revision proposal / 受约束 IR 修订提议
+        ↓
+changed-plan gate / 变更计划门
+        ↓
+canonical recompile / 标准重编译
 ```
 
-在 1.35 集成前必须把“dev permissive / prod explicit allowlist”变成显式 policy，不能让 empty-list 同时拥有两种相反含义。
+未来正式实现由 `07` 的 **G1 World IR + G4 Canonical World Compilation** 重新定义，不依赖不存在的 stash。Runtime 仍不得偷偷放宽用户约束或直接把 finding patch 成永久 live-world truth。
+
+### 3.4 Backend handoff 历史记录
+
+状态：**`STALE_HISTORICAL_RECORD`**，不可作为可恢复实现。
+
+旧 Live Map 曾记录 Gateway / Compiler production boundary 的 backend stash，但当前 AgentScape `git stash list` 为空，当前树也没有对应 Docker handoff 成套实现。因此后续若仍需要该 productization，必须基于当前代码重新形成独立 task spec，而不是写“恢复 backend stash”。
+
+仍然有效的 contract：dev permissive / prod explicit allowlist 必须是显式 policy；空 allowlist 不能同时拥有相反语义。
 
 ### 3.5 Runtime mutation atomicity
 
@@ -224,7 +171,7 @@ backend stash empty allowlist
 
 这不代表所有高级 pipeline 都不会回滚——部分功能已有局部清理或显式 `restore(before)`——但通用 mutation contract 当前不是 exception-atomic。
 
-建议将它作为 **1.35 Runtime Correctness Gate**，而不是继续隐藏在局部 caller 的补偿逻辑里。
+它现在正式归入新计划 **G0 Runtime Truth & Baseline Freeze**，任务号 `R-ATOMIC-01`；不再以版本号 1.35 作为架构前置。
 
 ### 3.6 EmbodiedGen Affordance provider evidence
 
@@ -506,19 +453,19 @@ AS-10 尚未完全宣告结束。下一 Gate 为 **AS-10B**：只有当 Provider
 
 ### W-01 Formalize Constrained WorldSpec Revision
 
-**状态：READY AFTER R-01 + mutation contract decision。**
+**状态：SUPERSEDED BY G1/G4。**
 
-把 stash prototype 恢复成独立 feature commit，保持 proposal-only；新增 revision evidence contract 和 stale evidence/replan tests。
+当前不存在可恢复 stash。该目标保留，但必须从 World IR revision contract 重新实现：proposal-only、evidence-linked、stale-evidence safe、changed-plan gated，并重新进入 canonical pipeline。
 
 ### B-01 Formalize Backend Handoff
 
-**状态：READY AFTER CORS ADR。**
+**状态：DEFERRED / RE-SCOPE REQUIRED。**
 
-把 backend stash 拆成可审查 commit：Gateway errors/timeouts、health protocol、Docker、Compiler CORS；先写 CORS ADR 再合代码。
+当前不存在可恢复 backend stash。若产品部署仍需要 Gateway/health/Docker/CORS handoff，重新按 Support Plane task spec 定义，并先冻结 CORS/security policy。
 
 ### R-02 WorldRuntime Mutation Atomicity
 
-**状态：BLOCKED BY R-01 CURRENT OWNERSHIP。**
+**状态：READY — 新计划 G0 的最高 Runtime correctness slice。**
 
 目标 contract：
 
@@ -540,147 +487,132 @@ scene/runtime truth == before
 
 ## 6. 并行工作 ownership 规则
 
-为了允许多个 AI 同时推进，按“高 blast-radius Runtime / 低 blast-radius platform boundary”分轨：
+未来 ownership 不再按“Provider/Connector/Artifact/Backend”作为主轴，而按 `07` 的五大核心 + 支撑层划分：
 
-| Track | 主要 ownership | 默认禁止并发修改 |
+| Owner | 主要 ownership | 禁止越权 |
 |---|---|---|
-| Runtime Truth | Physics / Interaction / Spatial / ToolCallingAgent / sequencing | Provider/Connector AI 不改这些文件 |
-| Provider Platform | `src/providers`、Asset gateway/library 最小接线 | 不改 Physics/Interaction |
-| Connector/Job | 新 connector/job modules + contract tests | 不直接改 WorldRuntime |
-| Artifact | artifact/import/storage modules | 不绕过 Compiler/Admission |
-| World Revision | WorldSpec/WorldRetry/Planner proposal | 不修改 provider credential/job transport |
-| Backend | gateway/service deployment boundary | 不改变 Runtime truth contract |
+| AI-1 World IR / Planner | World IR schema、revision、planner output | 不改 Runtime/Physics truth |
+| AI-2 Asset Compiler | Manifest、part/joint/collider evidence、Asset Admission | 不把 provider 标签直接升格 |
+| AI-3 Interaction / Rules | capability、precondition/effect、state transition、rule graph | 不直接控制 solver |
+| AI-4 Runtime / Physics | WorldRuntime mutation、PhysicsBackend、spatial/navigation runtime | 不让 UI/Planner 成第二 truth |
+| AI-5 Verification / Repair | finding、verifier、acceptance、repair proposal | 不直接 patch IR/Runtime |
+| AI-6 Provider / Generation | Connector、Provider、Job、Artifact、Job Center provider UX | 不改 core truth contract |
+| AI-7 Human / Persistence / Content | editor、serializer、history、environment/demo | UI 不保存第二份执行状态 |
+| AI-8 Integration Guardian | cross-contract tests、merge gate、compatibility | 不通过绕过 owner 解决冲突 |
 
-若一个任务必须跨 ownership，先在 Live Map 里标记冲突，再串行合并，不允许两个 agent 同时修改同一高风险文件后再靠人工猜 merge。
+高风险规则：`WorldRuntime` mutation 与 PhysicsBackend migration 由 AI-4 串行控制；跨 contract 修改先 proposal → owner → compatibility tests → AI-8 Gate。
 
-## 7. 阶段 Gate
+## 7. 当前 Gate 视图
 
-### Gate L0：Runtime Truth Stable
+旧 L0～L5 作为 Provider foundation 历史仍成立；旧 L6～L8 已被新计划取代。当前执行看下面的 G Gate：
 
-- R-01 merged；
-- 当前 dirty Runtime WIP 清零；
-- regression baseline 明确；
-- mutation atomicity 是否作为 1.35 blocker 已决策。
+### G0 — Runtime Truth & Baseline Freeze / Runtime 真值与基线冻结
 
-### Gate L1：Provider Contract Stable
+**状态：ACTIVE。**
 
-- P-01 merged；
-- provider/capability descriptor schema 稳定；
-- capability availability/health/operation identity tests；
-- legacy generator 仍兼容。
+- Provider/Job/Artifact/Asset foundation 已在 main；
+- 当前 worktree 的业务代码无 Runtime WIP；
+- `WorldRuntime.mutate()` exception atomicity 仍有已知缺口；
+- 下一 correctness slice：`R-ATOMIC-01`。
 
-### Gate L2：Connector Session Stable
+### G1 — World IR vNext Contract / 世界 IR 契约
 
-**状态：MERGED FOUNDATION。**
+**状态：PLANNED，可与 G0 的代码修复并行做 contract RFC。**
 
-- C-01/C-02 已进入 main；
-- credential 不进入 browser；
-- session scope/version/revoke/expiry 完整；
-- Connector capability -> ProviderRegistry normalization 完成。
+需要：revision/provenance、PhysicsRequirement、capability/state、interaction/rule intent、acceptance、compat normalization。
 
-### Gate L3：Async Job Truth Stable
+### G2A — Physics Interface Parity / 物理接口等价抽象
 
-**状态：MERGED FOUNDATION。**
+**状态：PLANNED AFTER mutation contract；dependency audit 可先行。**
 
-- J-01/J-02 已进入 main；
-- local Job identity 成为用户可见主身份；
-- provider remote ID 只是 location/provenance；
-- pending/provider_succeeded 不冒充 asset-ready。
+目标是 `PhysicsBackend Contract → RapierAdapter`，第一阶段零主动行为变化，不接 Genesis/PhysX。
 
-### Gate L4：Artifact Truth Stable
+### G2B — Interaction & Rule Contract / 交互与规则契约
 
-**状态：MERGED FOUNDATION。**
+**状态：PLANNED，可与 G2A 并行。**
 
-- A-01/A-02 已进入 main；
-- bytes/hash/role/lineage/locations；
-- signed URL 不成为持久 identity；
-- malformed/oversize/corrupt fail-closed。
+先 schema/contract，再做行为纵向切片。
 
-### Gate L5：Single Asset End-to-End
+### G3 — Executable Behavior Vertical Slice / 可执行行为纵向切片
 
-**状态：MERGED。**
+**状态：BLOCKED BY G1 + G2B + Runtime mapping。**
 
-- generic modal-3D 或 EmbodiedGen 单资产；
-- Job -> Artifact -> Compiler -> Admission；
-- `asset-ready/provisional/rejected` 真实传播。
+首批建议 OPEN/CLOSE、PICKUP/PLACE、SWITCH。
 
-### Gate L6：Dual Strategy
+### G4 — Planner + Canonical World Compilation / 世界规划与标准编译
 
-- Strategy A：2D -> SAM -> 3D；
-- Strategy B：EmbodiedGen Text -> bundle；
-- 显式选择，不静默双跑/重复计费；
-- fallback 创建 linked request。
+**状态：BLOCKED BY G1/G2B/G3 contract。**
 
-### Gate L7：Generated World v2
+这是旧 AS-11/12 的替代：Prompt → strict World IR → asset/behavior/physics admission → compose → runtime → verify → constrained revision。
 
-- Prompt -> WorldSpec v2；
-- reuse-first；
-- multiple async assets；
-- deterministic compose；
-- rejected world rollback；
-- provider artifacts 保留，不因 world rollback 删除。
+### G5 — Semantic Asset Automation / 语义资产自动化
 
-### Gate L8：Environment / Room / Offline
+**状态：PARTIALLY AVAILABLE / 可并行。**
 
-- background/environment bundle；
-- navigation rebuild；
-- room feasibility Gate；
-- scene serialize only compiled/artifact identity；
-- offline restore。
+现有 EmbodiedGen semantic evidence bridge 可继续提供 evidence；自动 joint/capability promotion 仍必须服从 Compiler/Verification Gate。
 
-## 8. 未来阶段优先级
+### G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
 
-### Phase 1：1.35 Correctness + Provider Foundation
+**状态：PLANNED。**
 
-R-01 -> P-01 -> W-01/B-01/R-02 按 ownership 串行收口。
+动作级验证已有强基础，世界级 acceptance + affected-IR repair 仍未形成完整 contract。
 
-### Phase 2：Providerized Async Asset Generation
+### G7 — Multi-backend Physics / 多物理后端
 
-**基础层已 MERGED：** C-01 -> C-02 -> J-01 -> J-02 -> A-01/A-02。后续不重复实现该链。
+**状态：DEFERRED UNTIL G2A + G6。**
 
-### Phase 3：Single Asset Production Loop
+先 validation-only backend，再考虑第二 live backend；没有 coupling/snapshot/verification contract 不进入多后端 live truth。
 
-**核心链已 MERGED：** AS-05/06/08 已提供 artifact -> compiler evidence -> admission；当前 AS-09 把 Job/Artifact 正式接到 Agent-visible orchestration。
+### G8 — Scale / Environment / Persistence / Multi-Agent / 规模化
 
-### Phase 4：Agent-visible Generation
+**状态：LATER。**
 
-AS-09 已 `MERGED`（`9523ecc`）；AS-10A Job Center core 已 `MERGED`（`df9f9c1`）。当前 UI 已覆盖 Connector/Job/Artifact/Compiler/Admission 的安全主链；下一项是 AS-10B richer schema/model/workflow UX + 真实 Connector product E2E。Agent/UI 始终不直接拿 provider 私有 API。
+Environment/Room、large world、soft body、multi-agent 在核心编译链稳定后推进。
 
-### Phase 5：Generated World v2
+## 8. 当前可并行执行的任务
 
-AS-11/12/13：Prompt -> WorldSpec v2、async fan-out、EmbodiedGen layout proposal；WorldSpec 仍由 Runtime compose/verify。
+按 `07`，第一批建议：
 
-### Phase 6：Environment / Persistence / Hardening
+```text
+AI-4  R-ATOMIC-01  WorldRuntime Mutation Atomicity
+AI-1  IR-01        World IR Contract RFC + Compatibility Normalizer
+AI-3  BEH-01       Capability / State / Rule Contract
+AI-5  VER-01       Unified Finding + Acceptance Contract
+AI-6  GEN-01       Real Connector Product E2E
+AI-7  UX-01        IR/Finding/Verification observability requirements
+AI-8  INT-01       Cross-contract test matrix
+```
 
-AS-14～19：environment/room、offline restore、安全、observability、fault injection、E2E。
+`PHY-01 PhysicsBackend Contract + Rapier Parity Adapter` 在 R-ATOMIC-01 mutation contract 明确后进入代码实现；在此之前可以做 dependency audit 与接口 RFC。
 
-自动语义、自动 Joint/Target 推断、复杂 grasp/manipulation、Multi-Agent 都应在上述生成供应链与真值层稳定后再提高优先级；否则会扩大“provider evidence 被误升为 Runtime truth”的风险。
+AS-10B 继续是 **conditional**：只有 Provider capability 真实提供 richer model/workflow/optionsSchema metadata 才做 schema-driven UI，不允许 UI 自行硬编码 provider catalog。
 
 ## 9. Live 更新协议
 
-每次 AgentScape 发生有意义变化，按以下步骤更新本文件：
+每次 AgentScape 有意义变化：
 
-1. 读取 `git status --short --branch`；
-2. 读取最新 `git log`，确认 main/branch/stash 身份；
-3. dirty worktree 只标 `DIRTY_WIP`，不写“完成”；
-4. 必要时 `codegraph sync`，再看关键 symbol/impact；
-5. 记录测试证据，只有 `exit_code=0` 才写 PASS；
-6. production build timeout 与失败分开记录；
-7. branch 合并后把 `COMMITTED_NOT_MERGED` 改成 `MERGED`；
-8. stash 只有工程化为正式 commit 后才能升级状态；
-9. 任务完成后必须写“下一依赖 Gate 是否解锁”；
-10. 稳定架构/contract 变化才回写 `01/02/03` 和 master roadmap；纯实施进度只更新 Live Map。
+1. `git status --short --branch`；
+2. `git log` 确认 HEAD；
+3. `git stash list` 必须真实检查，stash 为空就不能继续写 `STASH_PROTOTYPE`；
+4. 读取对应 owner 的核心 contract；
+5. 只有 `exit_code=0` 才记录 PASS；
+6. timeout 与 test failure 分开；
+7. branch 合并后才写 `MERGED`；
+8. 新 schema/architecture 变化同步 `07`；
+9. Provider transport 变化同步 `02`；
+10. 当前 commit/tests/next slice 只写 Live Map。
 
 ## 10. 下一次同步时优先检查
 
-按当前状态，下一次读取 AgentScape 时优先回答：
+下一次读取 AgentScape 时优先回答：
 
-1. AS-10A 的 Job Center 是否已在真实 Connector 进程上完成 pair → capability → submit → restart/reconcile → artifact → compile 的浏览器产品 E2E？
-2. Provider capability contract 是否已经真实提供 model/workflow/profile/optionsSchema 元数据；若没有，UI 不得自行硬编码 provider 私有 catalog。
-3. 哪些 JSON Schema 子集值得在 AS-10B 生成结构化表单，哪些仍应保留 JSON fallback？
-4. cost confirmation 是否需要按 provider/capability cost class 增加更细 policy，而不是只有统一的逐次确认？
-5. EmbodiedGen multi-artifact bundle 是否需要在 Job Center 中增加 artifact role selector，再进入 BundleAdapter，而不是默认优先 GLB？
-6. real Connector restart 后 local Job identity / idempotency / event cursor 是否都能无重复付费恢复？
-7. AS-10B 完成后是否具备进入 AS-11 Prompt→WorldSpec Planner 的证据；不得因 UI 可见就跳过 asset/world truth Gate。
+1. `R-ATOMIC-01` 是否已经用最小 reproducer + regression 修复 `WorldRuntime.mutate()` exception atomicity？
+2. `IR-01` 是否已经形成 World IR vNext contract，并兼容当前 WorldSpec normalize？
+3. `BEH-01` 是否把 capability/precondition/effect/state/verifier target 从散落逻辑收敛成 typed contract？
+4. `VER-01` 是否统一 action/world finding、acceptance linkage 与 stale-evidence identity？
+5. `PHY-01` 的 Rapier dependency audit 是否证明上层模块可以在不改变行为的前提下转向 PhysicsBackend contract？
+6. real Connector 是否完成 pair → capability → submit → restart/reconcile → artifact → compile 产品 E2E？
+7. Provider 是否真实提供 model/workflow/optionsSchema；若没有，AS-10B 保持 blocked/conditional。
+8. 是否有任何 AI 新增第二份 Runtime/Physics/World truth；若有，优先阻断而不是继续叠功能。
 
-这些问题决定下一项任务，不按日期机械推进 AS 编号。
+这些问题决定下一项任务，不再按旧 AS-11→19 或 L6→L8 机械推进。

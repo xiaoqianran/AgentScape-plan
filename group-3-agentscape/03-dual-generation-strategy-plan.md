@@ -1,5 +1,7 @@
 # AgentScape 双生成方案：组合式 2D→3D 与 EmbodiedGen Text→3D
 
+> 本文继续作为 **Asset Sourcing Strategy / 资产来源策略** 有效，但不再定义 AgentScape 核心架构推进顺序。未来 Core Gate 以 [`07-agent-native-world-architecture-replan.md`](./07-agent-native-world-architecture-replan.md) 为准；无论走哪条生成方案，都必须汇入同一 Asset Compiler / Admission / World IR / Runtime / Verification 真值链。
+
 ## 1. 方案定义
 
 AgentScape 对“从文字生成资产”提供两条并列方案，而不是把不同后端塞进一个含糊的 `generateAsset`：

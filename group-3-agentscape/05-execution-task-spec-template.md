@@ -6,7 +6,7 @@
 
 ```text
 Task ID:        <例如 C-01>
-Parent Plan:    <AS-02 / Gate L2>
+Parent Plan:    <G1 / IR-01 | G2A / PHY-01 | Support S1 / GEN-01 等>
 Owner Track:    <Runtime Truth / Provider / Connector / Artifact / World / Backend>
 Status:         PLANNED | IN_PROGRESS | COMMITTED_NOT_MERGED | MERGED | BLOCKED
 Base Commit:    <开始实施时的 AgentScape HEAD>
