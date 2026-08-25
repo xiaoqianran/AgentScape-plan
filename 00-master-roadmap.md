@@ -112,7 +112,7 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
 
 ### 3.4 第三组
 
-`AgentScape` 当前基线已经明显超出本计划最初的“同步 Generator + GLB URL Adapter”阶段。以 `main@8fca21a`（v1.34.2）复核：
+`AgentScape` 当前基线已经明显超出本计划最初的“同步 Generator + GLB URL Adapter”阶段。以 `main@e6776c9`（v1.34.2）复核：
 
 - Provider Registry、Connector scoped pairing/capability snapshot 已进入 main；
 - async Generation Job projection/reconcile、Artifact identity/import integrity 已进入 main；
@@ -121,7 +121,7 @@ Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
 - Agent-visible async generation 与 Generation Job Center core 已进入 main；
 - 当前 `git stash list` 为空；旧 Live Map 记录的 WorldRevision/backend stash 不可继续当作可恢复实现；
 - Runtime / Physics / Navigation / Interaction / Verification 仍然是 AgentScape 最成熟的事实层；
-- `WorldRuntime.mutate()` exception atomicity 已由 `3a956dc` 闭合：partial throw 恢复 before snapshot，rollback failure fail-closed，snapshot failure 不泄漏 mutation owner；当前 full suite `145 files / 635 tests PASS`。
+- `WorldRuntime.mutate()` exception atomicity 已由 `3a956dc` 闭合：partial throw 恢复 before snapshot，rollback failure fail-closed，snapshot failure 不泄漏 mutation owner；当前 full suite `146 files / 640 tests PASS`。
 
 因此第三组未来不再以 `AS-11→AS-19` 线性推进，而使用：
 
