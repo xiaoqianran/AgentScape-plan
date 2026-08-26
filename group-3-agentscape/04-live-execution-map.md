@@ -430,7 +430,7 @@ AS-09 merge/push Gate 已完成；其 UI 消费层已由 AS-10A Job Center core 
 - `provider-succeeded` 后才开放 Artifact import / compile；Provider success 本身不会开放“加入世界”；
 - Artifact import 展示 integrity/hash/producer/lineage；
 - Compiler/Admission 结果展示 `asset-ready/provisional/rejected` 与 admission reasons；
-- “导入 Artifact”“编译/注册资产”“加入当前世界”“用于 WorldSpec”是四个分离动作；WorldSpec 动作保持 disabled，等待 AS-11；
+- “导入 Artifact”“编译/注册资产”“加入当前世界”保持分离；历史 disabled “用于 WorldSpec”死入口已在 canonical IR 迁移后删除；
 - provider success + compiler rejected 会显式显示“不会提升为 asset-ready”；
 - provisional asset 如进入当前世界仍通过现有 `spawnAsset` 编辑态语义，不冒充 world-ready。
 
@@ -529,7 +529,7 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 **状态：COMPLETE — `281e02c` / `main@ca8cab7`.**
 
-已完成：revision/provenance、PhysicsRequirement、capability/state intent、interaction/rule intent、acceptance、serialize/parse、legacy WorldSpec normalization；current executable pipeline 对未编译富语义 fail-closed；WorldRetry 保留 revision/provenance 并由 revised IR 生成 nextPlan。
+已完成：revision/provenance、PhysicsRequirement、capability/state intent、interaction/rule intent、acceptance、serialize/parse。后续迁移已把 `normalizeWorldIR` 收紧为 strict schema；legacy WorldSpec 仅通过显式 compatibility upgrade 进入，Runtime 内部 canonical pipeline 与 WorldRetry 均只消费 World IR，retry 只生成 child `nextIR`。
 
 ### G2A — Physics Interface Parity / 物理接口等价抽象
 
@@ -551,9 +551,9 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G4 — Planner + Canonical World Compilation / 世界规划与标准编译
 
-**状态：PLANNER + BOUNDED REVISION PROPOSAL BOUNDARIES INTEGRATED — through `385fcf9`; natural-language live probe pending external test credential.**
+**状态：CANONICAL IR MIGRATION + SAFE INCREMENTAL REVISION SLICE — through `373a7f3`; natural-language live probe pending external test credential.**
 
-`World IR` 现为 canonical compilation input：asset / behavior / physics / acceptance 都从同一 revision-bound `WorldCompilation` 编译；legacy `WorldSpec` 仅保留 compatibility projection，不再决定富语义是否可执行。Agent 规划链已拆成确定性两阶段：`proposeWorldIR` 只接受 semantic proposal，由 Runtime 颁发 revision/provenance 并执行 normalize/reference/canonical compile preflight；成功后强制 fresh planning round，`runWorldPipeline` 只接受同一 Agent run 内已颁发 revision。模型跳过 proposal、自造 revision/provenance、同轮提前执行或用新 revision 重放相同语义，都会被 deterministic gate 拒绝。`spatial.constraints` 等尚无 compiler 的语义继续 fail-closed。proposal lineage 已继续收紧：world-rejected 后的 child proposal 自动继承 Runtime-owned parent revision / rejection reason / evidenceRefs。bounded repair 也已改成两阶段：`proposeWorldRevision(typed edits) → fresh round → recompileWorldRevision(exact issued proposal)`；baseWorldIR、base/next revision、Finding scope、affectedEntityIds 均由 Runtime 隐藏持有，proposal 篡改 fail-closed。typed entity edits 当前支持 `set-position / set-generation / replace-asset / set-initial-state / set-capability-intent / set-physics-requirement`，统一复用 canonical World IR normalization。当前 full suite `153 files / 692 tests PASS`，production build PASS。真实外部 LLM generated-world probe 已迁移到新协议，但当前 shell 未注入 `AGENTSCAPE_TEST_LLM_API_KEY`，因此 live model probe 尚未执行，不能记 PASS。下一核心切片：将 legacy WorldSpec 从隐式 canonical 输入迁到显式 compatibility boundary。
+`World IR` 现为 canonical compilation input：asset / behavior / physics / acceptance 都从同一 revision-bound `WorldCompilation` 编译；legacy `WorldSpec` 仅保留 compatibility projection，不再决定富语义是否可执行。Agent 规划链已拆成确定性两阶段：`proposeWorldIR` 只接受 semantic proposal，由 Runtime 颁发 revision/provenance 并执行 normalize/reference/canonical compile preflight；成功后强制 fresh planning round，`runWorldPipeline` 只接受同一 Agent run 内已颁发 revision。模型跳过 proposal、自造 revision/provenance、同轮提前执行或用新 revision 重放相同语义，都会被 deterministic gate 拒绝。`spatial.constraints` 等尚无 compiler 的语义继续 fail-closed。proposal lineage 已继续收紧：world-rejected 后的 child proposal 自动继承 Runtime-owned parent revision / rejection reason / evidenceRefs。bounded repair 也已改成两阶段：`proposeWorldRevision(typed edits) → fresh round → recompileWorldRevision(exact issued proposal)`；baseWorldIR、base/next revision、Finding scope、affectedEntityIds 均由 Runtime 隐藏持有，proposal 篡改 fail-closed。typed entity edits 当前支持 `set-position / set-generation / replace-asset / set-initial-state / set-capability-intent / set-physics-requirement`，统一复用 canonical World IR normalization。legacy WorldSpec 已进一步退出内核：`normalizeWorldIR` / Runtime internal pipeline / WorldRetry 均为 strict World IR；兼容只保留在显式 `upgradeLegacyWorldSpec / compileWorldInput / createWorldPipeline` 边界，Generation Job Center 的旧 disabled WorldSpec UI 也已删除。`set-initial-state` 已获得第一条安全增量重编译路径：只有 current revision、target asset 与 base semantic state 均可证明一致时才局部应用；否则自动 fallback full canonical rebuild；两条路径都 fresh validate + acceptance，失败 rollback。新 revision 会清除 stale restored acceptance evidence，rollback 精确恢复。当前 full suite `153 files / 697 tests PASS`，production build PASS。真实外部 LLM generated-world probe 已迁移到新协议，但当前 shell 未注入 `AGENTSCAPE_TEST_LLM_API_KEY`，因此 live model probe 尚未执行，不能记 PASS。下一核心切片：显式 revision impact/dependency classification，再逐项扩大可证明安全的 incremental scope。
 
 ### G5 — Semantic Asset Automation / 语义资产自动化
 
@@ -563,9 +563,9 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
 
-**状态：FIRST CLOSED LOOP COMPLETE + RUNTIME-OWNED BOUNDED PATCH GATE — through `385fcf9`.**
+**状态：FIRST CLOSED LOOP COMPLETE + SAFE INCREMENTAL STATE RECOMPILE — through `373a7f3`.**
 
-动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。`interaction-verified` 已不再读取 Planner/业务可写 state，而消费 revision-bound `InteractionEvidence`；对象替换/删除与 revision 变化都会使旧证据不可复用。Acceptance DSL 新增 Runtime-derived `relation-exists`（ON/NEAR/INSIDE/CONTAINS/SUPPORTS），`kind` 必填，避免 silent semantic erasure。Finding / Revision dependency closure 已纳入 relation subject/object 与 PLACE supportId。Affected-IR handoff 已升级为 Runtime-owned bounded proposal：Agent 只能提交 typed entity edits，不能自造 baseWorldIR/Finding scope/affectedEntityIds/revision identity；当前 edit 集为 `set-position / set-generation / replace-asset / set-initial-state / set-capability-intent / set-physics-requirement`。accepted proposal → canonical recompile rejected/异常仍自动 restore 原 scene；verified recompile 只清理对应 base revision 的 unresolved mutation，不误清其它任务。当前 full suite `153 files / 692 tests PASS`，production build PASS。
+动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。`interaction-verified` 已不再读取 Planner/业务可写 state，而消费 revision-bound `InteractionEvidence`；对象替换/删除与 revision 变化都会使旧证据不可复用。Acceptance DSL 新增 Runtime-derived `relation-exists`（ON/NEAR/INSIDE/CONTAINS/SUPPORTS），`kind` 必填，避免 silent semantic erasure。Finding / Revision dependency closure 已纳入 relation subject/object 与 PLACE supportId。Affected-IR handoff 已升级为 Runtime-owned bounded proposal：Agent 只能提交 typed entity edits，不能自造 baseWorldIR/Finding scope/affectedEntityIds/revision identity；当前 edit 集为 `set-position / set-generation / replace-asset / set-initial-state / set-capability-intent / set-physics-requirement`。accepted proposal → recompile 现分为安全增量与 full canonical fallback：纯 `set-initial-state` 且 Runtime/base state 可证明一致时只更新 affected semantic state，并重新 canonical compile、fresh Validator/Acceptance；任何 revision/asset/state 漂移都会自动走 full rebuild。rejected/异常仍 restore 原 scene 与 authority/evidence；verified recompile 只清理对应 base revision 的 unresolved mutation，不误清其它任务。当前 full suite `153 files / 697 tests PASS`，production build PASS。
 
 ### G7 — Multi-backend Physics / 多物理后端
 
