@@ -551,9 +551,9 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G4 — Planner + Canonical World Compilation / 世界规划与标准编译
 
-**状态：ACTIVE / PARTIAL — asset + behavior + physics + acceptance + revision/recompile 已进入 canonical 主链；Planner 仍待。**
+**状态：PLANNER PROPOSAL BOUNDARY INTEGRATED — `0ed8802`; natural-language live probe pending external test credential.**
 
-这是旧 AS-11/12 的替代：Prompt → strict World IR → asset/behavior/physics admission → compose → runtime → verify → constrained revision。当前 asset + behavior + physics + acceptance + revision/recompile 主链已具备。`WorldPhysicsAdmission` 会把 bodyClass/requiredCapabilities/executionMode/qualityPolicy 编译成 backend-neutral requirement，并依据当前 authoritative backend capability/executionMode/quality 声明 fail-closed；articulated 还要求 joint asset evidence。当前 full suite `150 files / 662 tests PASS`。下一核心缺口是 prompt→strict World IR planner 与 richer state/behavior persistence。
+`World IR` 现为 canonical compilation input：asset / behavior / physics / acceptance 都从同一 revision-bound `WorldCompilation` 编译；legacy `WorldSpec` 仅保留 compatibility projection，不再决定富语义是否可执行。Agent 规划链已拆成确定性两阶段：`proposeWorldIR` 只接受 semantic proposal，由 Runtime 颁发 revision/provenance 并执行 normalize/reference/canonical compile preflight；成功后强制 fresh planning round，`runWorldPipeline` 只接受同一 Agent run 内已颁发 revision。模型跳过 proposal、自造 revision/provenance、同轮提前执行或用新 revision 重放相同语义，都会被 deterministic gate 拒绝。`spatial.constraints` 等尚无 compiler 的语义继续 fail-closed。当前 full suite `153 files / 684 tests PASS`，production build PASS。真实外部 LLM generated-world probe 已迁移到 `search → proposeWorldIR → fresh round → runWorldPipeline`，但当前 shell 未注入 `AGENTSCAPE_TEST_LLM_API_KEY`，因此 live model probe 尚未执行，不能记 PASS。下一核心切片：proposal revision lineage + rejection-driven child revision。
 
 ### G5 — Semantic Asset Automation / 语义资产自动化
 
@@ -563,9 +563,9 @@ Editor 的 `beginMutation/commitMutation` 属于独立的手动 gizmo transactio
 
 ### G6 — World-level Acceptance & Local Repair / 世界级验收与局部修复
 
-**状态：FIRST CLOSED LOOP COMPLETE — through `1a8a5b0` / `main@8253f7d`.**
+**状态：FIRST CLOSED LOOP COMPLETE + TRUTH-BOUNDARY HARDENED — through `0ed8802`.**
 
-动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。Acceptance replay 已落地：restore 的 historical bundle 只有在 current revision 一致并重新跑同一 criteria 后才能生成新的 current bundle；state drift / revision mismatch 均 fail-closed 并产生新的 acceptance Finding。Affected-IR handoff 与 constrained revision 第一层已落地：pipeline rejection 可生成 `world-revision-context`，Finding 只决定 seed entity，关联对象仅作 context；proposal 只允许 bounded `set-position` / `set-generation` edit，且 apply 前必须显式 changed-plan gate；生成 child revision 并把 Finding IDs 写入 provenance evidenceRefs。当前 full suite `150 files / 662 tests PASS`。Accepted proposal → canonical recompile 已落地：显式 changed-plan gate 在任何 mutation 前校验；通过后 snapshot → clear old world → canonical pipeline(child IR) → fresh verification/acceptance；fresh admission rejected 或异常自动 restore 原 scene。
+动作级验证与 world acceptance 已有强基础；`Finding v1` 已统一 Validator/Acceptance failure identity，并将 repair eligibility / strategy / affectedObjects / worldRevisionId 显式化；RepairEngine 对 stale revision fail-closed，非 repairable Finding 不会被擅自修复。`interaction-verified` 已不再读取 Planner/业务可写 state，而消费 revision-bound `InteractionEvidence`；对象替换/删除与 revision 变化都会使旧证据不可复用。Acceptance DSL 新增 Runtime-derived `relation-exists`（ON/NEAR/INSIDE/CONTAINS/SUPPORTS），`kind` 必填，避免 silent semantic erasure。Finding / Revision dependency closure 已纳入 relation subject/object 与 PLACE supportId。Affected-IR handoff 与 constrained revision 第一层仍保持 bounded `set-position` / `set-generation` edit；accepted proposal → canonical recompile rejected/异常仍自动 restore 原 scene。当前 full suite `153 files / 684 tests PASS`，production build PASS。
 
 ### G7 — Multi-backend Physics / 多物理后端
 
