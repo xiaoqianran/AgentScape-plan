@@ -211,7 +211,7 @@ SHA-256 = descriptor SHA-256
 2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
 
 ```text
-AgentScape-agent  0270bd4  feat: wire openai agent gateway to source 3d asset
+AgentScape-agent  507e604  feat: add durable agent run checkpoints
 ```
 
 代码形态：
@@ -224,7 +224,7 @@ src/source_3d_asset.js  single-file Vertical Slice
 验证：
 
 ```text
-node:test                         14/14 PASS
+node:test                         20/20 PASS
 node --check                      PASS
 real modal-2D-client health       PASS
 real modal-2D candidate run       4/4 PASS
@@ -233,6 +233,12 @@ seeds                             42 / 73 / 104 / 135
 elapsed                           63672 ms
 candidate SHA-256                 4 distinct digests
 VLM ranking                       SKIPPED (credentials unavailable)
+
+source_3d_asset replay            5/5 PASS
+checkpoint atomic JSON            PASS
+checkpoint mode                   0600
+checkpoint failure                fail-closed
+binary Tool observation           rejected before persistence
 ```
 
 已验证的边界：
@@ -247,4 +253,4 @@ Agent
       → OpenAI-compatible VLM contract adapter
 ```
 
-未验证的内容必须继续标记为未完成：真实 VLM ranking、真实 modal-3D-client 接入、Asset publication、World placement。
+未验证的内容必须继续标记为未完成：真实 VLM ranking、真实 modal-3D-client 接入、Asset publication、World placement、跨进程 Tool resume。

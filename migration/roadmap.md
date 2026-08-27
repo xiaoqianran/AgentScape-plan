@@ -99,13 +99,13 @@ Human semantic selection 留 Hub；model-required automatic rembg 下沉 `modal-
 **状态：IN PROGRESS。** 独立仓库 `xiaoqianran/AgentScape-agent` 已建立；它是与 `modal-inference-hub` 平级的 Caller，不作为 AgentScape Core 的运行时 submodule 依赖。
 
 ```text
-A1 Agent Run / tool loop                 STARTED
+A1 Agent Run / tool loop + checkpoint    DONE (resume gated)
 A2 AgentScape / 2D / 3D / VLM adapters  PARTIAL
 A3 source_3d_asset Skill                 STARTED
 A4 build_world Skill                     TODO
 ```
 
-当前实现遵循 Experiment-oriented Modular Monolith：生产代码先保持 `agent.js + source_3d_asset.js` 两个高内聚文件，不建立 service/repository/manager/factory 横向层。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 已验证，VLM adapter 只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过。
+当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 已验证，VLM adapter 只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 3D/Asset Tool 都具备稳定 request identity/idempotency。
 
 旗舰 Gate：
 
