@@ -105,7 +105,7 @@ A3 source_3d_asset Skill                 STARTED
 A4 build_world Skill                     TODO
 ```
 
-当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 与真实 3D Sidecar adapter 均已验证。3D 路径已通过原始 2D PNG → `modal-3D-client` → Provider InputConditioner/BiRefNet → FastSAM3D++ → verified GLB。VLM adapter 仍只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过；AgentScape Asset adapter 也仍待接入。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 Asset Tool 具备稳定 request identity/idempotency。
+当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 与真实 3D Sidecar adapter 均已验证。3D 路径已通过原始 2D PNG → `modal-3D-client` → Provider InputConditioner/BiRefNet → FastSAM3D++ → verified GLB。2D/3D Adapter 现在都会在首次 Job 前通过 Sidecar `/v1/models` 做 lazy capability preflight，并缓存本次 Adapter capability；未知 model/profile 会在 GPU Job submit 前 fail-closed。VLM adapter 仍只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过；AgentScape Asset adapter 也仍待接入。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 Asset Tool 具备稳定 request identity/idempotency。
 
 旗舰 Gate：
 

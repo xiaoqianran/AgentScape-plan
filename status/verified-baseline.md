@@ -211,7 +211,7 @@ SHA-256 = descriptor SHA-256
 2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
 
 ```text
-AgentScape-agent  12d56d4  feat: add verified modal 3d sidecar adapter
+AgentScape-agent  e8af6ab  feat: preflight sidecar capabilities
 ```
 
 代码形态：
@@ -224,7 +224,7 @@ src/source_3d_asset.js  single-file Vertical Slice
 验证：
 
 ```text
-node:test                         23/23 PASS
+node:test                         25/25 PASS
 node --check                      PASS
 real modal-2D-client health       PASS
 real modal-2D candidate run       4/4 PASS
@@ -249,6 +249,11 @@ real modal-3D-client adapter      PASS
 3D foreground ratio                0.2843132019042969
 3D source SHA-256                  MATCH
 3D elapsed                         220643 ms
+real sidecar capability preflight PASS
+2D capability                      sana-sprint-1.6b / available
+3D capability                      fastsam3d-plus-plus / recommended / enabled
+unknown model/profile              fail-closed before Job submit
+capability fetch                   lazy + cached per adapter
 ```
 
 已验证的边界：
