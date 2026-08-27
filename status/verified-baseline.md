@@ -204,3 +204,47 @@ SHA-256 = descriptor SHA-256
 ```
 
 这些结果是后续 `modal-3D InputConditioner` public-contract 迁移的 baseline；迁移后必须重跑同一实验矩阵并保持 parity。
+
+
+# 10. AgentScape-agent Initial Vertical Slice
+
+2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
+
+```text
+AgentScape-agent  6786157  feat: initialize experiment-oriented agent runtime
+```
+
+代码形态：
+
+```text
+src/agent.js            high-level Agent tool loop
+src/source_3d_asset.js  single-file Vertical Slice
+```
+
+验证：
+
+```text
+node:test                         11/11 PASS
+node --check                      PASS
+real modal-2D-client health       PASS
+real modal-2D candidate run       4/4 PASS
+model                             sana-sprint-1.6b
+seeds                             42 / 73 / 104 / 135
+elapsed                           63672 ms
+candidate SHA-256                 4 distinct digests
+VLM ranking                       SKIPPED (credentials unavailable)
+```
+
+已验证的边界：
+
+```text
+Agent
+  → high-level tool only
+  → source_3d_asset
+      → deterministic pure state transitions
+      → side effects in imperative shell
+      → real modal-2D sidecar adapter
+      → OpenAI-compatible VLM contract adapter
+```
+
+未验证的内容必须继续标记为未完成：真实 VLM ranking、真实 modal-3D-client 接入、Asset publication、World placement。
