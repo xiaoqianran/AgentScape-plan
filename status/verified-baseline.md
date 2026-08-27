@@ -211,7 +211,7 @@ SHA-256 = descriptor SHA-256
 2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
 
 ```text
-AgentScape-agent  6786157  feat: initialize experiment-oriented agent runtime
+AgentScape-agent  0270bd4  feat: wire openai agent gateway to source 3d asset
 ```
 
 代码形态：
@@ -224,7 +224,7 @@ src/source_3d_asset.js  single-file Vertical Slice
 验证：
 
 ```text
-node:test                         11/11 PASS
+node:test                         14/14 PASS
 node --check                      PASS
 real modal-2D-client health       PASS
 real modal-2D candidate run       4/4 PASS
