@@ -32,7 +32,9 @@
 最后删除 Legacy
 ```
 
-默认不拆文件。只有出现独立 State Owner、生命周期、失败恢复、部署或测试矩阵时才拆。
+默认实现策略由 [`ADR-0005`](adr/0005-experiment-oriented-modular-monolith.md) 约束：**Experiment-oriented Modular Monolith → Vertical Slice → Single-file First → Functional Core / Imperative Shell → Extract by Pressure**。
+
+默认不拆文件。只有出现独立 State Owner、failure/retry 生命周期、GPU/部署生命周期、安全边界、测试矩阵、持续冲突或真实性能压力时才拆。行数不是拆分依据。
 
 ## 架构完成标准
 
