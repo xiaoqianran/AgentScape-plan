@@ -100,12 +100,12 @@ Human semantic selection 留 Hub；model-required automatic rembg 下沉 `modal-
 
 ```text
 A1 Agent Run / tool loop + checkpoint    DONE (resume gated)
-A2 AgentScape / 2D / 3D / VLM adapters  PARTIAL
+A2 AgentScape / 2D / 3D / VLM adapters  PARTIAL (2D+3D real verified)
 A3 source_3d_asset Skill                 STARTED
 A4 build_world Skill                     TODO
 ```
 
-当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 已验证，VLM adapter 只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 3D/Asset Tool 都具备稳定 request identity/idempotency。
+当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 与真实 3D Sidecar adapter 均已验证。3D 路径已通过原始 2D PNG → `modal-3D-client` → Provider InputConditioner/BiRefNet → FastSAM3D++ → verified GLB。VLM adapter 仍只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过；AgentScape Asset adapter 也仍待接入。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 Asset Tool 具备稳定 request identity/idempotency。
 
 旗舰 Gate：
 
