@@ -1,5 +1,7 @@
 # 跨项目主契约
 
+> **拓扑更新（2026-08-27）**：Consumer/Provider/Companion 的长期关系以 `../01-product-architecture-replan.md` 为准。本文已有 capability/job/artifact/schema 语义继续作为 contract 输入，但“统一 Connector 生成全局本地 ID”“AgentScape 必须通过桌面配对调用 Provider”均视为旧拓扑，不再作为长期约束。
+
 ## 1. 适用范围与权威顺序
 
 本文是以下项目的协议总纲：
@@ -7,7 +9,7 @@
 - `modal-2d`；
 - `modal-3D`；
 - `modal-build` EmbodiedGen workflows；
-- 统一 `modal-client`；
+- Local Companion（现 `modal-3D-client` 演进）；
 - `AgentScape`。
 
 权威顺序：
@@ -60,7 +62,7 @@ Provider Capability
 
 ### Job/Artifact/Project ID
 
-- 本地ID由统一Connector生成，opaque且全局唯一；
+- 每个 Consumer 在自己的业务域生成 opaque Job/Artifact identity；Provider remote ID 只作为映射，不追求跨所有 Consumer 的万能全局 Job ID；
 - remote call/job ID只保存在location；
 - artifact ID不等于Volume path；
 - content hash不直接当用户可变label；
@@ -91,7 +93,7 @@ Provider Capability
 - provider/service ID；
 - contract/implementation/deployment revision；
 - health/status；
-- supported Connector range；
+- supported Consumer/contract range；
 - generated/expires/cache policy。
 
 ### Operation级
@@ -118,33 +120,44 @@ Provider Capability
 
 只有部署并通过canary的能力可`available`。只有preload、Notebook或代码路径存在时应`experimental/disabled`。
 
-## 6. Connector Session Contract
+## 6. Consumer / Companion Session Contract
 
-两类会话：
+Provider Contract 与 Companion Contract 是两类不同边界，不能混成一个万能 Connector session。
 
-### Desktop主会话
+### AgentScape Cloud → Provider
 
-- Tauri每次启动生成高熵token；
-- 只通过invoke交给主WebView；
-- full product scope；
-- 生命周期绑定sidecar/desktop。
+- Provider credential 只保存在 AgentScape server-side Generation Service；
+- Browser 不接触 Provider Secret；
+- Agent Tool 不能自定义任意 endpoint/header；
+- Provider auth 与业务 Agent session 分离。
 
-### AgentScape配对会话
+### Local Companion → Provider
 
-- 用户在desktop确认；
-- 独立短期token；
-- origin/client identity绑定；
-- scopes：capabilities/jobs/artifacts等；
-- issued/expires/revoke/audit；
-- 不含credential read/write与任意Modal调用。
+- 用户自己的 Provider credential 保存在 OS credential store；
+- React/WebView 不读取 Secret；
+- native/sidecar Provider client 发起请求；
+- Local Companion 拥有自己的 durable local job projection。
 
-共同规则：只监听loopback、每请求认证、CORS不替代认证、token不进DB普通字段/log/scene/localStorage。
+### Local Companion → AgentScape Cloud
+
+- 用户显式 pairing；
+- Companion 主动建立 outbound TLS session；
+- 独立 device credential；
+- scopes 至少区分 `asset.metadata.publish`、`artifact.materialize`、`artifact.preview`；
+- issued/expires/revoke/audit 明确；
+- 不授予任意 filesystem read、command execution、secret read。
+
+### Browser → AgentScape Cloud
+
+Browser 只持有 AgentScape 用户会话；不直接与 Provider 或本机 filesystem 建立信任关系。
+
+长期不把 `Browser → localhost random port` 作为 Cloud 产品主拓扑。过渡期 loopback API 仍需每请求认证、CORS 不替代认证、token 不进入普通 DB 字段/log/scene/localStorage。
 
 ## 7. Request Envelope
 
 通用字段：
 
-- local request ID；
+- consumer-owned request ID；
 - idempotency key；
 - provider/operation/version；
 - typed inputs；
@@ -166,11 +179,11 @@ Provider计算：
 
 ## 8. Job Contract
 
-### 本地Job是用户身份
+### Consumer Job 是该 Consumer 域内的用户可见身份
 
 必需字段：
 
-- local Job ID；
+- consumer-owned Job ID；
 - provider/operation/kind；
 - request hash/idempotency；
 - remote kind/ID/deployment；
@@ -180,7 +193,7 @@ Provider计算：
 - created/submitted/started/updated/completed；
 - error；
 - result/artifact summary；
-- project/owner/source app；
+- project/owner/source consumer；
 - contract/capability versions。
 
 ### 基础状态
@@ -200,7 +213,7 @@ Workflow可增加`awaiting_user_selection`、`stalled`，但必须定义可恢�
 
 - `connection_required`不是远端失败；
 - `cancel_requested`不是cancelled；
-- provider `succeeded`只代表结果可取；本地`succeeded`要求required artifact校验/cache完成；
+- provider `succeeded`只代表远端结果可取；Consumer 域内的 `succeeded` 还必须满足该 Consumer 自己定义的 required artifact 校验/持久化条件；
 - AgentScape另有asset/world admission，不能复用Job status；
 - 超时轮询不直接变failed；
 - success/cancel竞态按远端最终事实记录并写event。

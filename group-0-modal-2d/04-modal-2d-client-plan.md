@@ -1,5 +1,7 @@
 # `modal-2d-client` 新仓实施计划
 
+> **架构迁移提示（2026-08-27）**：长期产品拓扑已由仓库根目录 `01-product-architecture-replan.md` 重定义。`modal-2D-client` 不再计划并入中央 `modal-gen-client` daemon；其可复用的 2D consumer/Prompt/Gallery/Job/Artifact 能力最终迁入由 `modal-3D-client` 演进的 **Local Companion**。本文仍作为 2D 功能迁移与验收参考。
+
 ## 1. 项目定位
 
 `modal-2d-client` 首先提供独立可验收的 2D 产品工作区，最终成为统一 2D/3D 桌面产品中的 `2D Studio` 模块。它不是长期复制一套 `modal-3D-client` 基础设施。

@@ -1,61 +1,61 @@
 # 总体实施路线：Modal 2D/3D 创作 → EmbodiedGen 工作流 → AgentScape 世界
 
+> **产品拓扑更新（2026-08-27）**：`01-product-architecture-replan.md` 已成为 AgentScape Studio / Cloud Provider / Local Companion 的跨项目产品架构权威。本文中“单一 Local Connector 是 AgentScape 必经路径”“2D/3D 客户端统一成中央 Connector”的旧设计已被覆盖；World IR / Compiler / Runtime / Verification 的核心 Gate 仍继续有效。
+
 ## 1. 目标定义
 
-最终目标不是简单地把几个 HTTP 地址接在一起，而是形成一条可恢复、可验证、可扩展的本地/云端创作系统：
+最终目标是形成一套 **AI World Studio + Cloud Generation Providers + Local Companion**：
 
-1. 将 `kaggle-inference-hub` 中的 SANA 与 Z-Image 迁成 `modal-build + modal-2d + modal-2d-client`，并保留 Prompt、batch、Gallery 与历史能力。
-2. 用户在本地提交自己的图片或已抠图 RGBA，选择 Modal 上的 3D 模型，得到可在本地预览、保存和再次使用的 GLB。
-3. 将 `modal-2d-client` 与 `modal-3D-client` 彻底统一为一个 Host、Connector、凭据、Job DB、Artifact Cache 和项目系统。
-4. `modal-build` 在不修改 `EmbodiedGen` 的前提下，将其能力拆成可独立部署、可恢复、可组合的 Modal 阶段。
-5. AgentScape 通过同一个本地安全 Connector 使用两条显式 Text→3D 方案：组合式 `modal-2d→SAM→modal-3D`，以及 EmbodiedGen Text→3D bundle。
-6. 所有生成结果先进入 AgentScape 的 Asset Compiler 与 Admission；长期主链再进入 World IR、Interaction/Rule Compilation、World Runtime、Physics Capability、Navigation 与 Verification。上游模型、Planner 或具体 solver 都不能绕过验证成为未审查的“真实能力”。
+1. `modal-2D` 与 `modal-3D` 成为同级、纯粹、可独立调用的云端 Generation Provider；
+2. AgentScape Cloud 通过 Skills / Generation Service **直接**调用 Provider，自动生图、生 3D、编译资产并构建世界；
+3. `modal-3D-client` 演进为 Local Companion，用户本机也能独立调用同一批 Provider，并管理自己的素材、预处理、缓存和预览；
+4. `modal-2D-client` 的 Prompt/Gallery/Batch 等产品能力最终迁入 Local Companion，不形成第二套长期桌面基础设施；
+5. AgentScape Studio 成为用户总控制面：命令 AI、查看任务拆分、管理素材、观察生成 Job、编辑/查看 3D World 与 Verification；
+6. Local Companion 只向 AgentScape 发布用户授权的 Asset metadata，真正使用 local-only 资产时再按需 materialize bytes；
+7. `modal-gen-client` 不作为长期必经 daemon，其稳定 contract/schema/fixtures 下沉为共享 Generation Provider Contract；
+8. 所有生成结果都必须经过 Artifact Gate → Asset Compiler/Admission → World Runtime/Verification，Provider success 永远不等于 World ready。
 
-本文把“先实现自己的 3D 模型转换”解释为第一条可交付纵向链：
-
-```text
-用户自有图片 / Canonical RGBA
-→ 本地 modal-3D-client
-→ Modal SAM 预处理（可选）
-→ Modal 3D Worker
-→ GLB
-→ 本地校验、预览、保存
-```
-
-新增的文本创作纵向链为：
+两条关键生成路径：
 
 ```text
-Prompt → modal-2d lossless image → 可选 SAM/canonical RGBA
-       → modal-3D → GLB → AgentScape Compiler
-
-Prompt → EmbodiedGen Text→3D workflow → sim-ready evidence bundle
-       → AgentScape Compiler
+AgentScape Cloud ───────────────┐
+                               ├──► modal-2D / modal-3D ─► Artifact ─► Compiler ─► World
+Local Companion ───────────────┘
 ```
 
-已有 3D 文件的 OBJ/FBX/STL/PLY 格式互转不作为第一里程碑；它在后续“资产导入与 AgentScape 编译”阶段按真实需求加入，避免把最初目标稀释成通用 DCC 转换器。
+```text
+用户本机素材
+→ Local Companion Library
+→ publish metadata
+→ AgentScape Asset Catalog
+→ Agent 选择
+→ on-demand materialize
+→ Compiler / Admission
+→ World
+```
+
+EmbodiedGen 仍通过 `modal-build` 以重型 Provider/workflow 形式提供 Text→3D、affordance 等能力，不直接成为 AgentScape World truth。
 
 ## 2. 不可打破的仓库边界
 
-| 仓库 | 所有权与职责 | 允许修改 | 明确禁止 |
+| 仓库 | 长期角色 | 允许 | 明确禁止 |
 |---|---|---|---|
-| `kaggle-inference-hub` | 2D/3D Kaggle 原型、迁移行为与历史数据基线 | 迁移期安全修正、导出/归档文档 | 继续吸收新的正式 Modal 能力；把硬编码 token/Tunnel 带入新系统 |
-| `modal-2d`（新） | SANA、Z-Image 等轻量独立 Modal 2D Worker 与 Gateway | Worker、Capability、Artifact、测试、部署 | 放 Prompt AI Secret、本地 UI、Kaggle worker claim |
-| `modal-2d-client`（新） | 2D Studio 过渡产品模块 | Prompt、batch、Gallery、2D Provider、legacy import | 长期复制第二套 Tauri/凭据/Job DB/Artifact Cache |
-| `modal-3D` | 轻量、模型无关的 Modal 3D Worker 与预处理事实源 | Worker、Gateway、能力清单、结果契约、测试、部署文档 | 放本地 UI、持久化用户凭据、吸收 EmbodiedGen 全部逻辑 |
-| `modal-3D-client` | Windows/Tauri 本地产品、Modal 凭据、任务与本地产物 | React、Tauri、Python Agent、本地 DB、Connector 协议 | 在浏览器/React 中持久化 Modal Secret；把大型模型打包进安装器 |
-| `modal-client`（最终逻辑产品） | 单一 2D/3D/EmbodiedGen 桌面 Host 与 Connector | 统一 UI、Provider、Job、Artifact、Project、AgentScape 配对 | 同时运行两个 sidecar/vault/DB；以跨端口文件复制冒充统一 |
-| `modal-build` | 构建 2D/3D CUDA 产物、消费固定上游版本、部署 EmbodiedGen Modal 工作流 | Builder、Release、Runtime、版本化 patch、适配层、测试 | 在付费推理容器临时编译；把权重或 Secret 发到 Release |
-| `EmbodiedGen` | 上游能力与语义基线 | **不修改，只读、固定 commit/tag** | 任何业务提交、直接修补、为 Modal 改上游目录 |
-| `AgentScape` | 浏览器原生 Agent-native World Compiler & Runtime；拥有 World IR、资产/行为编译、运行时与验证边界 | Provider/Connector 支撑、Compiler、World IR、Interaction/Rule、PhysicsBackend、UI、测试 | 在浏览器保存 Modal Token；把 Provider/Planner/solver proposal 直接当可执行或验证真值 |
+| `kaggle-inference-hub` | 历史原型/迁移证据 | 对照、归档、必要安全修复 | 吸收新的正式生产控制面 |
+| `modal-2D` | 纯 2D Generation Provider | Worker、Capability、Job、Artifact、Provider API | Local Project、AgentScape World、桌面产品状态 |
+| `modal-3D` | 纯 3D Generation Provider | cloud preprocess/SAM、Image→3D Worker、Capability、Job、Artifact | Local Library、桌面 UI、AgentScape World |
+| `modal-3D-client` | **Local Companion 迁移基础** | Local Library、Project、Preprocess、Cache、Viewer、2D/3D Provider consumer、Companion Bridge | 成为 AgentScape 的必经中央 Connector |
+| `modal-2D-client` | 过渡 2D 产品/迁移源 | Prompt/Gallery/Batch UX 迁移 | 长期第二套桌面 Host/DB/cache/vault |
+| `modal-gen-client` | 迁移期 contract/reference source | schema、normalization、fixtures、adapter 经验 | 长期中央 daemon、全局业务真值 |
+| `modal-build` | EmbodiedGen/build/heavy workflow Provider 工程 | Builder、Runtime、patch、阶段工作流 | Local UI、World truth |
+| `EmbodiedGen` | 上游只读能力源 | 固定 commit/tag、只读审计 | 产品控制面 |
+| `AgentScape` | **Studio + Cloud Agent + Asset + World 产品域** | Frontend、Agent/Skills、Generation Service、Asset Catalog、Companion Gateway、Compiler、Runtime、Verification | 浏览器保存 Provider Secret；绕过 Compiler/Verification |
+| `AgentScape-plan` | 架构/契约/Gate 权威 | ADR、迁移与验收文档 | 业务实现 |
 
-如果 EmbodiedGen 需要兼容性修正，只能采用以下顺序：
+EmbodiedGen 如需兼容性修正，仍优先 external wrapper；无法绕开时才在 `modal-build/patches/<upstream-version>/` 保存带 base hash、原因与验证用例的最小 patch。
 
-1. 先用外部 wrapper、环境变量、固定入口绕开。
-2. 确实无法绕开时，在 `modal-build/patches/<upstream-version>/` 保存最小 patch。
-3. patch 必须记录上游 commit、目标文件哈希、原因、验证用例和失效条件。
-4. `EmbodiedGen` 工作区始终保持上游原貌。
+## 3. 历史实现基线 / 当前实施需重新复核
 
-## 3. 当前真实基线
+> 本节保留原计划形成时的实现快照，不再作为 2026-08-27 当前 checkout 的权威事实。当前仓库角色与重构起点见 `01-product-architecture-replan.md` 的 4.1；实施任务必须重新读取各仓 HEAD。
 
 ### 3.1 2D 前置组
 
@@ -146,68 +146,65 @@ Provider / Connector / Job / Artifact 从“未来主架构”调整为 **Suppor
 
 ## 4. 目标架构
 
+完整产品拓扑以 [`01-product-architecture-replan.md`](./01-product-architecture-replan.md) 为权威。总图压缩如下：
+
 ```text
-┌──────────────────────────────── 本地设备 ────────────────────────────────┐
-│                                                                          │
-│  统一 modal-client（2D / 3D / Pipeline） + AgentScape                    │
-│        │                                                                 │
-│        ├── UI：Prompt、图片、模型/工作流、任务、Gallery、3D/世界预览     │
-│        │                                                                 │
-│        └── Local Modal Connector                                         │
-│             ├── Windows 凭据管理器 / 内存 Modal Client                   │
-│             ├── modal-2d / modal-3d / EmbodiedGen providers             │
-│             ├── capability discovery + durable local jobs                │
-│             ├── artifact cache / project lineage / 2D→3D handoff        │
-│             ├── local Prompt Pipeline                                    │
-│             └── loopback session/pairing security                        │
-└──────────────────────────────┬───────────────────────────────────────────┘
-                               │ Modal RPC（不从浏览器直传 Secret）
+                         AgentScape Studio
+                     Chat / World / Assets / Jobs
+                               │
                                ▼
-┌──────────────────────────────── Modal ───────────────────────────────────┐
-│  modal-2d control plane                                                  │
-│    ├── SANA Sprint / Z-Image-Turbo                                       │
-│    └── lossless primary + preview artifact                               │
-│                                                                          │
-│  modal-3D control plane                                                  │
-│    ├── SAM 3.1 preprocessing                                             │
-│    ├── FastSAM3D++ / Hunyuan++ / Hermit++ / Pixal3D                    │
-│    └── shared artifact contract                                          │
-│                                                                          │
-│  modal-build EmbodiedGen workflows                                       │
-│    ├── asset.image_to_3d / asset.text_to_3d                             │
-│    ├── asset.texture / asset.convert / asset.affordance                  │
-│    ├── scene.background / scene.layout / scene.room                      │
-│    └── simulation.validate（后置）                                       │
-│                                                                          │
-│  Shared: immutable artifacts, per-job stage state, hash, lineage         │
-└──────────────────────────────┬───────────────────────────────────────────┘
-                               │ versioned result/artifact bundle
-                               ▼
-┌──────────────────────────── AgentScape ──────────────────────────────────┐
-│ Support: Provider / Connector / Job / Artifact                           │
-│ 支撑层：Provider / Connector / Job / Artifact                            │
-│                              ↓                                           │
-│ World Planner → World IR → Asset + Interaction/Rule Compilation          │
-│ 世界规划器 → 世界 IR → 资产 + 交互/规则编译                              │
-│                              ↓                                           │
-│ World Runtime → Physics Capability → Navigation / Interaction            │
-│ 世界运行时 → 可替换物理能力层 → 导航 / 交互                              │
-│                              ↓                                           │
-│ Verification → Finding → Bounded Repair / IR Revision                    │
-│ 验证 → 问题证据 → 有界修复 / IR 修订                                     │
-└──────────────────────────────────────────────────────────────────────────┘
+                        AgentScape Cloud
+                  ┌────────────┼────────────┐
+                  │            │            │
+                  ▼            ▼            ▼
+              Agent/Skills  Asset Catalog  World Core
+                  │            ▲            │
+                  ▼            │            ▼
+          Generation Service   │       Compiler/Runtime/
+             │          │      │       Verification
+             ▼          ▼      │
+        modal-2D     modal-3D  │
+             ▲          ▲      │
+             │          │      │
+             └────┬─────┘      │
+                  │            │
+             Local Companion ──┘
+        Library / 2D / 3D / Cache
+              metadata + materialize
 ```
 
-### 4.1 为什么必须有 Local Modal Connector
+### 4.1 两个平级 Consumer
 
-不让 AgentScape 直接调用 Modal Web Endpoint，原因不是偏好，而是当前边界决定的：
+```text
+AgentScape Cloud ──direct──► Provider
+Local Companion ──direct───► Provider
+```
 
-- AgentScape 是浏览器应用，现有原则明确不在浏览器保存模型或服务 Secret。
-- EmbodiedGen ASGI 使用 proxy auth；`modal-2d`/`modal-3D` 使用私有 Modal RPC 和 Volume。
-- lossless 图片、GLB 和 bundle 可能位于私有 Volume，不是天然的 CORS 公网 URL。
-- 本地任务必须跨刷新/重启恢复，而浏览器同步 `fetch` 无法承担 3–30 分钟工作流。
+AgentScape Cloud 不依赖用户电脑在线才拥有生成能力；Local Companion 也不依赖 AgentScape 才能管理素材和生图/生 3D。
 
-因此 Connector 是统一的安全与可靠性边界。过渡期以 `modal-3D-client/agent` 的安全基线为源，最终收敛为一个中性 Local Connector；`modal-2d-client` 不长期另建第二套凭据、DB 和 artifact cache。
+### 4.2 Companion 不是 Connector 中转站
+
+Local Companion 只承担用户本机域：
+
+```text
+filesystem / library / project / preprocess / local cache / viewer
+```
+
+以及与 AgentScape 的安全桥：
+
+```text
+outbound pairing/session
+metadata publish
+on-demand materialize
+```
+
+### 4.3 AgentScape Frontend 是总控制面
+
+Browser 只调用 AgentScape Cloud，不直接持有 Modal Secret。用户在 Studio 中支配 AI、素材、生成任务、World 和 Verification。
+
+### 4.4 Shared Generation Contract
+
+`modal-2D`、`modal-3D`、AgentScape、Local Companion 共享 versioned Provider Contract：Capability / Request / Job / Artifact / Error。`modal-gen-client` 的稳定协议资产迁入这里，而不是继续保留一层必须运行的 daemon。
 
 ## 5. 执行顺序与硬依赖
 
@@ -248,18 +245,20 @@ TripoSR和其余3D Notebook不进入此Gate。
 - SAM 自动/云端/跳过策略；
 - 真实 Windows 安装包 smoke test。
 
-### Gate 3：2D/3D 客户端彻底统一
+### Gate 3：Local Companion 产品化
+
+本 Gate 已按 `01-product-architecture-replan.md` 重定义。最终用户本机仍只保留一个桌面产品，但它是 **Local Companion**，不是 AgentScape 的中央 Connector。
 
 完成：
 
-- 一个 Tauri Host、Local Connector、credential、DB、cache；
-- 中性 capability/job/artifact/project contract；
-- 2D/3D工作区与global Job Center；
-- lossless `2D→SAM→3D` parent-child pipeline；
-- 3D失败从3D stage重试，不重新生成2D；
-- 一个AgentScape配对入口。
+- 以 `modal-3D-client` 为迁移基础收敛一个 Local Library / Project / Cache / Viewer；
+- 2D Studio 与 3D Studio 都直接消费共享 Generation Provider Contract；
+- `modal-2D-client` 的 Prompt/Gallery/Batch 等 UX 迁入 Companion；
+- Companion 可独立调用 `modal-2D`、`modal-3D`；
+- Companion 通过 outbound session 向 AgentScape 发布授权资产 metadata，并支持按需 materialize；
+- 不再把 AgentScape 的云端生成流量强制经过 Companion。
 
-只有 Gate 3 通过，AgentScape 才依赖正式 Connector。
+AgentScape 与 Companion 是 Provider 的两个平级 Consumer；Gate 3 不再是 AgentScape 调 Provider 的前置依赖。
 
 ### Gate 4：EmbodiedGen 统一工作流内核
 
@@ -282,18 +281,18 @@ TripoSR和其余3D Notebook不进入此Gate。
 6. Room。
 7. 仿真、soft-body、robot-learning 工具（可选后置）。
 
-### Gate 6：AgentScape Generation Support Plane / 生成支撑层
+### Gate 6：AgentScape Direct Generation + Asset Support Plane
 
-原“双方案单资产接入”基础大部分已经进入 AgentScape main，因此 Gate 6 重新定义为产品级支撑层验收：
+按 `01-product-architecture-replan.md`，Gate 6 不再验收“真实 Local Connector 必经链”，而验收 AgentScape Cloud 自己作为 Provider Consumer 的生成支撑层：
 
-- real Connector process pair → capability → submit → restart/reconcile → artifact → compile E2E；
-- local Job identity / idempotency / event cursor 不因重启重复计费；
-- Artifact hash/lineage 与 Compiler/Admission truth 保持分层；
-- 方案 A / B 继续显式选择，不静默双跑；
-- AS-10B 只有在 provider 真实提供 model/workflow/optionsSchema metadata 后才进入；
-- Provider success 永远不等于 Asset/World verified。
+- AgentScape `GenerationService` 直接发现并调用 `modal-2D` / `modal-3D` / EmbodiedGen Provider；
+- Cloud generation job、provider remote job、Artifact identity 明确分层；
+- Provider success → Artifact verify → Compiler/Admission，绝不直接成为 Asset/World truth；
+- `searchAssets()` 默认先于 `generateAsset()`，只生成真正缺失资产；
+- Local Companion 资产通过 Asset Catalog metadata + on-demand materialize 进入同一 Compiler；
+- 关闭 `modal-gen-client` daemon、Local Companion 离线时，AgentScape Cloud 仍可独立完成 Text→Image→3D→Compile。
 
-Gate 6 是 AgentScape Support Plane，不再阻塞 World IR contract 的设计工作。
+Gate 6 与 Local Companion 产品线可并行，不阻塞 World IR contract。
 
 ### Gate 7：AgentScape World Compilation Core / 世界编译核心
 
@@ -411,9 +410,9 @@ EmbodiedGen 的 asset、texture、scene、room、affordance、simulation 依赖�
 
 AgentScape 当前是 Three.js GLB-first Runtime，不原生渲染 3DGS。首版 scene background 将 `mesh_model` 转成受预算约束的 GLB；3DGS PLY 作为保留 artifact。只有测得 Mesh 方案无法满足目标时，才单独立项 3DGS renderer。
 
-### ADR-07：最终只有一个本地客户端基础设施
+### ADR-07：最终只有一个 Local Companion，但它不是中央 Connector
 
-`modal-2d-client` 可以先作为独立工作区交付，但最终只保留一个 Tauri Host、Connector、credential、Job DB、Artifact Cache 和 AgentScape pairing。两个 localhost 应用互相传 URL 不算“彻底打通”。
+`modal-2d-client` 可以作为过渡工作区；最终用户本机只保留一个由 `modal-3D-client` 演进的 Local Companion，统一本机 Library、Project、Preprocess、Cache、Viewer、2D/3D Studio。**但 AgentScape Cloud 不经它中转 Provider 调用**：AgentScape Cloud 与 Local Companion 都直接消费共享 Generation Provider Contract。
 
 ### ADR-08：2D Primary 必须无损
 

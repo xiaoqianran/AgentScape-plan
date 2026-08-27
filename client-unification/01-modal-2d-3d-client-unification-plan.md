@@ -1,5 +1,7 @@
 # `modal-2d-client` × `modal-3D-client` 彻底统一计划
 
+> **状态：历史迁移计划，产品拓扑已被 `../01-product-architecture-replan.md` 覆盖。** 其中“一个中央 Local Modal Connector 作为 AgentScape 必经层”的目标已废止。仍可复用：单一桌面产品、2D/3D UX 合并、Local Library/Project/Cache、凭据安全、migration 与 contract fixtures；这些能力现在归属 **Local Companion**。
+
 ## 1. 最终目标
 
 “打通”不只是一张图片卡片跳转到另一个本地端口。最终只能有一个用户级产品边界：

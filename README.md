@@ -4,25 +4,26 @@
 
 ## 阅读顺序
 
-1. [`00-master-roadmap.md`](./00-master-roadmap.md)：总目标、边界、依赖顺序、目标架构与总体验收口径。
-2. 2D 前置组：`kaggle-inference-hub → modal-build + modal-2d + modal-2d-client`
+1. [`01-product-architecture-replan.md`](./01-product-architecture-replan.md)：**当前跨项目产品拓扑权威**；定义 AgentScape Studio/Cloud、纯 Provider、Local Companion、Asset Catalog、Companion Bridge 与旧 Connector 退役方向。
+2. [`00-master-roadmap.md`](./00-master-roadmap.md)：历史总路线与 World Core Gate；其中与新产品拓扑冲突的 Local Connector/客户端统一描述以 `01` 为准。
+3. 2D 前置组：`kaggle-inference-hub → modal-build + modal-2d + modal-2d-client`
    - [`group-0-modal-2d/01-kaggle-inference-hub-migration-map.md`](./group-0-modal-2d/01-kaggle-inference-hub-migration-map.md)
    - [`group-0-modal-2d/02-modal-build-2d-plan.md`](./group-0-modal-2d/02-modal-build-2d-plan.md)
    - [`group-0-modal-2d/03-modal-2d-plan.md`](./group-0-modal-2d/03-modal-2d-plan.md)
    - [`group-0-modal-2d/04-modal-2d-client-plan.md`](./group-0-modal-2d/04-modal-2d-client-plan.md)
    - [`group-0-modal-2d/05-group-contract-and-acceptance.md`](./group-0-modal-2d/05-group-contract-and-acceptance.md)
-3. 第一组：`modal-3D + modal-3D-client`
+4. 第一组：`modal-3D + modal-3D-client`
    - [`group-1-modal-3d/01-modal-3D-plan.md`](./group-1-modal-3d/01-modal-3D-plan.md)
    - [`group-1-modal-3d/02-modal-3D-client-plan.md`](./group-1-modal-3d/02-modal-3D-client-plan.md)
    - [`group-1-modal-3d/03-group-contract-and-acceptance.md`](./group-1-modal-3d/03-group-contract-and-acceptance.md)
-4. 客户端统一：`modal-2d-client × modal-3D-client`
+5. 客户端统一（历史迁移参考）：`modal-2d-client × modal-3D-client`
    - [`client-unification/01-modal-2d-3d-client-unification-plan.md`](./client-unification/01-modal-2d-3d-client-unification-plan.md)
-5. 第二组：`modal-build + EmbodiedGen`（EmbodiedGen 只读、不修改）
+6. 第二组：`modal-build + EmbodiedGen`（EmbodiedGen 只读、不修改）
    - [`group-2-embodiedgen/01-modal-build-plan.md`](./group-2-embodiedgen/01-modal-build-plan.md)
    - [`group-2-embodiedgen/02-EmbodiedGen-readonly-stage-map.md`](./group-2-embodiedgen/02-EmbodiedGen-readonly-stage-map.md)
    - [`group-2-embodiedgen/03-workflow-contract-and-acceptance.md`](./group-2-embodiedgen/03-workflow-contract-and-acceptance.md)
    - [`group-2-embodiedgen/04-live-execution-state.md`](./group-2-embodiedgen/04-live-execution-state.md)：实时事实、下一任务、验证 Gate；每次实际开发/Modal 验证后优先同步这里。
-6. 第三组：`AgentScape`
+7. 第三组：`AgentScape`
    - [`group-3-agentscape/07-agent-native-world-architecture-replan.md`](./group-3-agentscape/07-agent-native-world-architecture-replan.md)：**当前未来执行权威计划**；使命、World IR、五大核心、可替换物理后端、G0～G8 与多 AI ownership。
    - [`group-3-agentscape/01-AgentScape-integration-plan.md`](./group-3-agentscape/01-AgentScape-integration-plan.md)：历史 Integration 分解；AS-00～10 仍可查，AS-11～19 的旧线性顺序已被 07 取代。
    - [`group-3-agentscape/02-provider-artifact-world-contract.md`](./group-3-agentscape/02-provider-artifact-world-contract.md)
@@ -30,24 +31,36 @@
    - [`group-3-agentscape/04-live-execution-map.md`](./group-3-agentscape/04-live-execution-map.md)：动态实现账本、下一任务切片、依赖 Gate 与并行 ownership；实施 AgentScape 前优先读取。
    - [`group-3-agentscape/05-execution-task-spec-template.md`](./group-3-agentscape/05-execution-task-spec-template.md)：把 Live Map 中的一个切片固化成可独立交付、可验收的 AI/开发任务。
    - [`group-3-agentscape/06-embodiedgen-evidence-bridge-execution.md`](./group-3-agentscape/06-embodiedgen-evidence-bridge-execution.md)：EmbodiedGen P3-SAM / semantic / grasp evidence 进入现有 Compiler/Admission 的文件级执行计划。
-7. 跨项目治理与落地顺序
+8. 跨项目治理与落地顺序
    - [`cross-cutting/01-master-contracts.md`](./cross-cutting/01-master-contracts.md)
    - [`cross-cutting/02-milestones-testing-risks-rollout.md`](./cross-cutting/02-milestones-testing-risks-rollout.md)
 
 ## 总体关系
 
 ```text
-Kaggle 2D 原型 → modal-build → modal-2d → modal-2d-client ┐
-                                                          ├→ 统一 modal-client
-个人图片/RGBA → modal-3D → modal-3D-client ───────────────┘        │
-                                                                    ├→ 方案A：2D→SAM→3D
-EmbodiedGen（只读）→ modal-build阶段化工作流 ────────────────────────┼→ 方案B：Text→3D bundle
-                                                                    ▼
-                                                              AgentScape
-                                               → Asset Compiler / Admission
-                                               → World IR / Behavior Compile
-                                               → Runtime / Physics Capability / Verification
+                         AgentScape Studio
+                               │
+                               ▼
+                        AgentScape Cloud
+                 Agent / Skills / Assets / World
+                         │             │
+                         ▼             ▼
+                    modal-2D       modal-3D
+                    Provider       Provider
+                         ▲             ▲
+                         └──────┬──────┘
+                                │ same Provider Contract
+                                ▼
+                         Local Companion
+                    （现 modal-3D-client 演进）
+                     Library / 2D / 3D / Cache
+                                │
+                                └── metadata/materialize ──► AgentScape Asset Catalog
+
+EmbodiedGen（只读） → modal-build Provider/workflows ──► AgentScape Generation/Asset Support
 ```
+
+`modal-gen-client` 不再定义为长期必需的中央 daemon；其稳定 contract/schema/fixture 能力应下沉为共享 Provider Contract。`modal-2D-client` 的产品 UX 最终迁入 Local Companion，不形成第二个长期桌面基础设施。
 
 ## 本轮 CodeGraph 阅读基线
 

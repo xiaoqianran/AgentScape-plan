@@ -1,5 +1,7 @@
 # AgentScape Agent-native World Architecture Replan
 
+> **产品拓扑补充（2026-08-27）**：World IR / Compiler / Runtime / Physics / Verification 仍以本文为权威；Frontend、Cloud Generation、Local Companion、Provider direct-consumer topology 改由仓库根目录 `01-product-architecture-replan.md` 定义。本文旧的 Real Connector Product E2E 不再表示 AgentScape 必须经过本地 Connector。
+
 > **状态：AUTHORITATIVE FUTURE PLAN / 未来执行权威计划**
 > **当前执行基线：AgentScape `main@8253f7d`（v1.34.2）**
 > 本文从 2026-08-25 起取代 `01-AgentScape-integration-plan.md` 中 **AS-11～AS-19 的旧顺序**，并取代 `04-live-execution-map.md` 中旧的 Gate L6～L8 / Phase 5～6 未来排序。
@@ -1046,22 +1048,20 @@ Environment/Room 现在属于 G8 产品化，不再反过来决定 Core Contract
 
 核心 Gate 之外，Provider/产品线继续并行。
 
-### Support S1 — Real Connector Product E2E
+### Support S1 — Direct Provider + Companion Product E2E
 
 当前 AS-10A 已 merged。下一项不是无条件写 AS-10B，而是先验证真实产品链：
 
 ```text
-Browser Job Center
-   ↓ pair
-Real Connector Process
-   ↓ capability
-Provider
-   ↓ submit/restart/reconcile
-Generation Job
+AgentScape Studio
+   ↓
+AgentScape Generation Service ──direct──► Provider
    ↓ artifact
-Importer
-   ↓ compile
-Asset Admission
+Artifact Gate → Compiler → Asset Admission
+
+Local Companion ──direct───────────────► Provider
+   │
+   └── metadata/materialize ───────────► AgentScape Asset Catalog
 ```
 
 必须证明：
@@ -1214,11 +1214,11 @@ Owner：AI-5。
 - stale-evidence identity；
 - acceptance linkage。
 
-### GEN-01 — Real Connector Product E2E
+### GEN-01 — Direct Provider + Companion Product E2E
 
 Owner：AI-6。
 
-这是当前 Provider 线最重要的产品验证，独立于 IR/Runtime 主线。
+这是当前 Provider/Companion 线最重要的产品验证：AgentScape Cloud 与 Local Companion 分别直接消费 Provider，并通过 Asset Catalog/materialize 汇合；独立于 IR/Runtime 主线。
 
 ### UX-01 — Mission/IR observability surface
 
@@ -1351,6 +1351,9 @@ VERIFIED TASK COMPLETE / 任务真实验证完成
 从本次重规划以后：
 
 ```text
+01-product-architecture-replan.md（仓库根目录）
+  └─ Studio / Cloud Generation / Provider / Local Companion / Asset Catalog 产品拓扑
+
 07-agent-native-world-architecture-replan.md
   └─ 未来架构 / Gate / ownership / 长期执行顺序
 
@@ -1372,8 +1375,9 @@ VERIFIED TASK COMPLETE / 任务真实验证完成
 
 更新规则：
 
-- 核心架构变化 → 更新 `07`；
+- Studio / Cloud Generation / Provider / Local Companion / Asset Catalog 产品拓扑变化 → 更新根目录 `01-product-architecture-replan.md`；
+- World IR / Compiler / Runtime / Physics / Verification 核心架构变化 → 更新 `07`；
 - 当前实现状态 → 更新 `04`；
-- Provider transport contract → 更新 `02`；
+- Provider transport contract → 更新 `02` 与跨项目 contracts；
 - 资产生成策略 → 更新 `03`；
 - 不把未来愿景写成当前已实现事实。

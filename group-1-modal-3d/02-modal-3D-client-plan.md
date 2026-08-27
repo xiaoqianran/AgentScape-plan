@@ -1,5 +1,7 @@
 # `modal-3D-client` 文件级实施计划
 
+> **架构迁移提示（2026-08-27）**：`modal-3D-client` 的长期定位已由仓库根目录 `01-product-architecture-replan.md` 重定义为 **Local Companion**。Project/Preprocess/Library/Cache/Viewer/Provider consumer 继续保留；“向 AgentScape 提供中央 Local Modal Connector、最终并入 modal-gen-client”的旧职责废止。本文其余文件级事实和本地安全基线仍可复用。
+
 > 执行进度、当前 HEAD、已验证证据与下一批具体任务见 [`00-execution-status.md`](./00-execution-status.md)。本文件保留为设计/验收基线。
 
 ## 1. 项目定位
