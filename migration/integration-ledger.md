@@ -54,7 +54,7 @@ modal-build/runtime/embodiedgen_v2_l40s.py
 
 | From → To | 当前用途 | Target | Verdict |
 |---|---|---|---|
-| `modal-2D-client → modal-2D` | Modal remote execution | local durable mirror → provider execution → PNG | **KEEP** |
+| `modal-2D-client → modal-2D` | Modal remote execution + Volume-first Artifact fetch | local durable mirror → provider execution → verified PNG cache | **KEEP / MIGRATED 2026-08-27** |
 | `modal-3D-client → modal-3D` | Modal remote 3D execution | Generation Saga → provider execution → GLB | **KEEP** |
 | `modal-3D-client connector/* → internal stores` | Connector compatibility | Connector 只能调用 Application Boundary，不直接操作 Domain Store | **MOVE** |
 

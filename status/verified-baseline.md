@@ -5,11 +5,11 @@
 # 1. Pinned Workspace Heads
 
 ```text
-AgentScape                         5a381d5
+AgentScape                         ad17111
 AgentScape-client                  3a4a2d2
 modal-gen-client                   4e93fc1
-modal-2D-client                    dd21b37
-modal-2D                           8a8e6ed
+modal-2D-client                    72ff9bb
+modal-2D                           e237b30
 modal-3D-client                    d92fabe
 modal-3D                           a814f1d
 kaggle-inference-hub               334de7c
@@ -103,3 +103,48 @@ Segmentation/raw grasp/semantic/SAPIEN/AgentScape evidence level 不得合并。
 新的独立验证入口是什么？
 Legacy 何时可以删？
 ```
+
+
+# 8. Architecture Migration Evidence — R2 / modal-2D
+
+2026-08-27 第一组正式迁移已完成：
+
+```text
+modal-2D         e237b30  feat: stabilize modal 2d artifact contract
+modal-2D-client  72ff9bb  feat: stream modal 2d artifacts from volume
+AgentScape       ad17111  chore: sync modal 2d artifact migration
+```
+
+验证证据：
+
+```text
+modal-2D ruff                      PASS
+modal-2D pytest                    18/18 PASS
+modal-2D-client ruff               PASS
+modal-2D-client pytest             36/36 PASS
+modal-gen-client full pytest       32 PASS / 2 SKIP
+AgentScape targeted regression     29/29 PASS
+real modal-2D deploy               PASS
+real capability metadata           PASS
+real PNG bytes                     808259
+real PNG dimensions                1024x1024
+real Artifact digest               MATCH
+real sidecar Volume-first fetch    PASS
+legacy read_artifact fallback used false
+```
+
+迁移后的稳定边界：
+
+```text
+modal-2D
+  GPU → PNG → named Volume + ArtifactDescriptor
+                    │
+                    ▼
+modal-2D-client
+  Volume-first stream → integrity verify → content-addressed cache
+                    │
+                    ▼
+Connector / caller
+```
+
+`remote_path` / Modal Volume 仍是 Provider-private transport；AgentScape 不感知该位置。

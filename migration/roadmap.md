@@ -36,15 +36,17 @@ Gate：所有 production 箭头都能回答 `Purpose / Contract / State Owner / 
 
 # R2 — Low-risk Provider Boundary Stabilization
 
-顺序：
+**进度（2026-08-27）：**
 
 ```text
-modal-2D
+modal-2D         DONE
   ↓
-modal-2D-client
+modal-2D-client  DONE
   ↓
-modal-3D
+modal-3D         NEXT
 ```
+
+已完成的 2D 边界：Provider capability/Artifact 对齐 Shared Contracts；Reference Sidecar 改为 Volume-first Artifact Fetch，并保留 legacy Function fallback。
 
 这些仓库边界已较健康，只做 contract/readiness/artifact/smoke 对齐，不做大 rewrite。
 
