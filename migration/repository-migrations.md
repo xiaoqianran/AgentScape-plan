@@ -1,150 +1,182 @@
 # Repository Migrations
 
-每个仓库使用 **小切片 + parity + 独立验证** 迁移。禁止同时大改多个跨仓 Contract。
+所有迁移使用 **小切片 + parity + 独立验证**。禁止同时大改多个跨仓 Contract。
 
 # 1. AgentScape
 
-## Current
-
-`WorldRuntime` 直接构造 Connector/Generation；`GenerationOrchestrator` 同时 discovery、execution、composition、artifact import、compile；`AssetLibrary` 同时 search/resolve/generate。
-
 ## Target
 
-Architecture Card 01：模块化领域核心，Provider 只通过 Asset Sourcing Port 进入。
+Asset + World Domain Core。
 
 ## Slices
 
-1. **A1 Composition Root**：把 Connector/Generation 创建从 `WorldRuntime` 移到外部 composition root；先保持行为不变。
-2. **A2 Asset Sourcing Port**：引入一个高内聚 Asset Sourcing 边界；LegacyGenerationAdapter 暂接旧 Orchestrator。
-3. **A3 Artifact-first**：旧路径返回规范化 Artifact；显式 verify → AssetCompiler；禁止 Orchestrator 直接“成功即 Asset”。
-4. **A4 AssetLibrary Purification**：移除 generation ownership，只保留 list/search/resolve existing assets。
-5. **A5 Catalog Shrink**：ProviderRegistry/Catalog 只 discover/resolve，不 execute workflow。
-6. **A6 Retire Orchestrator**：所有 parity/E2E 通过后删除 GenerationOrchestrator 作为架构中枢。
-7. **A7 Skill Surface**：Agent 默认只见高层 source/generate/build/interact；低层 submit/get/cancel 进入 debug/operator 面。
+```text
+A1 expose stable Asset API
+A2 establish Asset Repository
+A3 move Agent/Skills out to AgentScape-agent
+A4 caller-driven publish_asset(Artifact)
+A5 AssetLibrary → search/get/store only
+A6 remove WorldRuntime → Connector/Generation
+A7 retire GenerationOrchestrator
+A8 ProviderRegistry leaves domain path
+A9 preserve World Compiler/Runtime
+```
 
-## Gate
+Gate：真实苹果链持续通过；Core 可在零 Provider 配置下运行 Asset/World/Runtime。
 
-真实苹果链必须持续通过：real provider → Artifact → AssetCompiler → WorldPipeline → table support verify → Agent navigate → pickup verified。
+# 2. AgentScape-agent
 
-# 2. AgentScape-client
+**新仓。**
 
-1. 对齐 Shared Contracts 语义，不创建万能 Provider model。
-2. 把 transport 明确成 direct/HTTP/gateway adapter。
-3. Artifact verifier 成为公共稳定能力。
-4. CLI 提供最小 image/3d/verify/smoke 调用。
-5. 保持无业务 DB。
+```text
+agent.py     Agent Run / LLM tool loop
+skills.py    source_3d_asset / build_world
+ tools.py    stable tool surface
+runs.py      checkpoint / durable run state
+adapters.py  AgentScape / 2D / 3D / VLM
+```
 
-Gate：可以脱离 AgentScape UI 独立调用 Provider 并验证结果。
+第一旗舰 Skill：
 
-# 3. modal-gen-client
+```text
+source_3d_asset
+→ search
+→ generate N images
+→ VLM rank/select/retry
+→ generate 3D
+→ verify
+→ publish Asset
+```
 
-1. 冻结 pairing/origin/scope 安全语义和现有安全测试。
-2. 将 Provider 业务选择与 generation composition 从 Gateway 移出。
-3. Provider adapter 只做 contract mapping + transport。
-4. Job/Artifact Store 明确为 local projection，字段保留 provider execution/artifact identity。
-5. 删除任何只为“global generation platform”存在的状态/接口。
+Gate：Text → 3D → Asset → World placement 自动闭环。
 
-Gate：浏览器 secret isolation、pairing、scope、2D/3D forwarding 全通过；无业务 workflow regression。
+# 3. AgentScape-client
 
-# 4. modal-2D-client
+1. 移除万能 Provider Client 定位。
+2. 只暴露 Asset/World/Runtime domain contract。
+3. 保留 CLI/reference examples/contract validation。
+4. 无业务 DB。
 
-低改动：
+# 4. modal-inference-hub
 
-1. 明确 local mirror 与 provider execution identity。
-2. 对齐 ArtifactDescriptor 输出。
-3. 保留 request_id/idempotency/restart recovery。
-4. 不新增 Project/UI/多 Provider 能力。
+原 `modal-3D-client` 演化而来。
 
-Gate：submit → restart → recover → PNG verify。
+```text
+H1 rename identity + preserve legacy data dir
+H2 Project/UI/History 保留
+H3 Human semantic selection/mask 保留
+H4 3D execution → new modal-3D-client
+H5 image candidate generation → modal-2D-client
+H6 workflow history only references sidecar jobs/artifacts
+H7 optional publish → AgentScape
+H8 delete duplicate Modal Job/Artifact transport implementation
+```
 
-# 5. modal-2D
+Gate：Hub full tests；历史 Project/Job 数据无损；2D/3D Provider 可脱离 Hub 独立 smoke。
 
-极低改动：
+# 5. modal-gen-client
 
-1. 固定最小 input/output contract。
-2. readiness/models 与 inference 分离。
-3. 输出 PNG descriptor/digest 可独立验证。
-4. 保持模型加载/推理高内聚；不引入业务 DB。
+1. 冻结 pairing/origin/scope 安全测试。
+2. 删除业务 composition/routing policy。
+3. 只做 mechanical forwarding 到 2D/3D Sidecar。
+4. Server-side Agent/Hub 不强制经过 Gateway。
 
-Gate：真实 GPU smoke + PNG verifier。
+# 6. modal-2D-client
 
-# 6. modal-3D-client
+**当前边界基本稳定。**
 
-## Current
+保持：durable mirror、request identity、Volume-first Artifact fetch、integrity verify/cache、legacy fallback。
 
-ProjectStore、Jobs、GenerationIntent、Preprocess、ConnectorStore、UI/Server 多 ownership 混合。
+禁止新增 Project/UI/Asset/World。
 
-## Slices
+# 7. modal-2D
 
-1. **3C1 Application Boundary**：先在现有实现外建立 Project/Preprocess/Generation 三个稳定应用入口，行为不变。
-2. **3C2 Project Domain**：ProjectStore 只拥有 source/files/history/selection；移出 generation 状态。
-3. **3C3 Preprocess Domain**：rembg/component/canonicalization/verification 只产生 local artifacts，不修改 generation store。
-4. **3C4 Generation Saga**：统一 intent/idempotency/remote_created/uncertain/recovery/provider binding；合并重复 job truth。
-5. **3C5 Artifact Layer**：source/matte/canonical/GLB 使用统一 local descriptor/location/digest。
-6. **3C6 Connector Adapter**：connector/* 只调用 Application Boundary，不直接碰 Store。
-7. **3C7 UI Adapter**：UI 只消费 Application API。
-8. **3C8 Delete Legacy Cross-links**：所有 recovery/E2E 通过后删除重复 store/shortcut。
+**当前边界基本稳定。**
 
-Gate：raw image → preprocess → canonical → real modal-3D → GLB；进程重启后 uncertain/remote job 可恢复；Connector compatibility 仍通过。
+保持：image.generate、两模型 runtime、PNG Artifact、named Volume。
 
-# 7. modal-3D
+Gate：`040-modal-2d-provider`。
 
-1. 固化 Provider API 与 model/profile registry。
-2. Gateway 只 validation/readiness/dispatch。
-3. 各 Model Worker 独立拥有模型依赖/GPU/pre/postprocess。
-4. GLB Artifact normalization/digest 统一。
-5. preprocess 仅在出现真实跨仓复用后才提升边界。
+# 8. modal-3D-client
 
-Gate：每个 enabled model 独立 smoke；gateway capabilities/readiness 不被单个模型冷启动长期阻塞。
+新独立 Reference Sidecar。
 
-# 8. kaggle-inference-hub
+```text
+3C1 models/capability cache
+3C2 request identity + durable remote projection
+3C3 input upload
+3C4 GLB Volume fetch/verify/cache
+3C5 restart/unknown-submit recovery
+3C6 public input contract 从 canonical RGBA 放宽为 image + optional mask
+```
 
-1. **K1 Task Core**：从 `app.py` 提炼 queue/lease/task state truth，保持现有 DB 行为。
-2. **K2 Worker API**：register/claim/heartbeat/input/complete/fail/upload 独立路由与测试。
-3. **K3 Consumer API**：submit/status/cancel?/artifact；不暴露 lease 细节。
-4. **K4 Artifact Layer**：completion 与 immutable artifact identity 分开。
-5. **K5 Prompt Pipeline**：降级为 Consumer helper。
-6. **K6 UI/WebSocket**：只通过 Consumer API/View model 观察。
-7. **K7 AgentScape Adapter**：只有 K1-K6 稳定后才加入 AgentScape consumer adapter。
+最后一项只能在 modal-3D InputConditioner 完成后切换。
 
-Gate：worker crash → lease/reclaim 正确；consumer 不依赖 Worker API；artifact 可独立验证。
+# 9. modal-3D
 
-# 9. modal-build
+当前多模型 Gateway/Registry/Worker 架构保留。
 
-1. **B1 Build Manifest**：记录 upstream revision、patch digest、dependency/runtime identity、weights、output digest。
-2. **B2 Build Verification**：import/ABI/runtime smoke 成为 release gate。
-3. **B3 Runtime Composition Root**：保留现有 route，先把 3000+ 行 runtime 的 wiring 集中到 app/composition root。
-4. **B4 Split by GPU Lifecycle**：依次迁 image、image3d、retexture、affordance；每迁一块保持 endpoint parity。
-5. **B5 Jobs/Artifacts**：抽出共享 durable job/artifact mechanics，但不统一不同 capability 的业务输入。
-6. **B6 Evidence Levels**：segmentation/raw grasp/semantic/SAPIEN/AgentScape findings 永久分级。
-7. **B7 Delete Full-build Runtime Path**：production runtime 不再在线 build 本应离线固定的依赖。
+```text
+3D1 stabilize capability/artifact identity
+3D2 add Provider InputConditioner
+3D3 preserve valid alpha/mask
+3D4 auto segmentation/rembg when absent
+3D5 bbox/crop/center/normalize
+3D6 keep model-private canonical rules inside workers/adapters
+3D7 loosen public input contract
+```
 
-Gate：Build 可复现；runtime 无动态 CUDA build；每个 capability real GPU smoke；AgentScape evidence ingestion 不回退。
+Gate：迁移前后都跑 `041-modal-3d-provider`；4/4 model parity 必须保持。
 
-# 10. EmbodiedGen
+# 10. kaggle-inference-hub
 
-不重写。
+```text
+K1 Task Core
+K2 Worker API
+K3 Consumer API
+K4 Artifact Layer
+K5 Prompt Pipeline becomes consumer helper
+K6 UI/WebSocket only consume Consumer API
+K7 add Agent/Hub adapter only after K1-K6 stable
+```
 
-- 固定 revision。
-- patch 只存在 `modal-build`。
-- compatibility test 属于 `modal-build`。
-- 不接受 AgentScape-specific upstream architecture patch。
+# 11. modal-build
 
-# 11. modal-lab
+```text
+B1 Build Manifest
+B2 Build Verification
+B3 Runtime Composition Root
+B4 split by GPU lifecycle
+B5 shared Job/Artifact mechanics
+B6 explicit evidence levels
+B7 remove runtime full-build path
+```
 
-不做 production refactor。
+# 12. EmbodiedGen
 
-- 保留一实验一目录。
-- 每个实验记录 upstream/revision/run/result/cost/benchmark。
-- 成功实验只能通过 Promotion Gate 进入 production repo，禁止 runtime import。
+不重写。固定 revision；patch/compatibility 全归 modal-build。
 
-# 12. AgentScape-plan
+# 13. modal-lab
 
-本次重建即目标结构。
+不 productionize。
 
-后续只做：
+新增职责：Provider migration baseline verification。
 
-- Card/Contract/Runtime View 随 architecture-significant change 更新。
-- Integration Ledger 随跨仓箭头更新。
-- Migration 文档记录切片与 Gate，不记录零散 debug TODO。
-- 新决策需要 ADR 时才新增 ADR。
+```text
+experiment definition
+→ real run
+→ evidence
+→ PASS/FAIL
+→ architecture/promotion decision
+```
+
+Production runtime 永不 import modal-lab。
+
+# 14. AgentScape-plan
+
+保持单一 Architecture Authority。
+
+- Card 随 architecture-significant evidence 更新。
+- Ledger 始终区分 Current 与 Target。
+- 真实实验结果进入 Verified Baseline。
+- ADR 只记录真正架构决策。

@@ -1,233 +1,167 @@
 # Architecture Migration Roadmap
 
-目标不是“所有仓库一起重写”，而是**逐个稳定边界，保持真实能力持续工作，再删除 Legacy**。
+目标不是一起重写全部仓库，而是按 **事实验证 → 拓扑纠正 → Capability 稳定 → Caller 建立 → Core 提纯 → Legacy 删除** 迁移。每一步必须有独立 Gate。
 
 # R0 — Architecture Authority
 
-**状态：本次重建完成后 DONE。**
+**状态：DONE。**
 
-交付：
+权威由 `System Landscape / Repository Cards / Shared Contracts / Runtime Views / Integration Ledger / Repository Migrations / Verified Baseline / ADR` 组成。
 
-```text
-System Landscape
-Repository Cards
-Shared Contracts
-Runtime Views
-Integration Ledger
-Repository Migrations
-Verified Baseline
-ADRs
-```
+# R1 — Provider Reality Verification
 
-Gate：当前工作树只存在一套架构权威，不再有 PA/P15/P19/Studio/Companion 平行路线。
-
-# R1 — Integration Truth Freeze
-
-目标：在改生产代码前，把所有跨仓真实箭头补齐到 Integration Ledger。
-
-任务：
-
-1. 对每条跨仓调用确认 endpoint/contract/credential/state/retry/artifact owner。
-2. 当前没有 canonical runtime arrow 的仓库明确标 `ABSENT/VERIFY`，不脑补。
-3. 每个 Production Provider 固化独立 smoke 命令。
-4. Shared Contracts 只冻结语义，不创建新的 shared-contract repo/package。
-
-Gate：所有 production 箭头都能回答 `Purpose / Contract / State Owner / Retry Owner / Artifact Owner`。
-
-# R2 — Low-risk Provider Boundary Stabilization
-
-**进度（2026-08-27）：**
+**状态：DONE。**
 
 ```text
-modal-2D         DONE
-  ↓
-modal-2D-client  DONE
-  ↓
-modal-3D         NEXT
+040-modal-2d-provider   PASS
+041-modal-3d-provider   PASS
 ```
 
-已完成的 2D 边界：Provider capability/Artifact 对齐 Shared Contracts；Reference Sidecar 改为 Volume-first Artifact Fetch，并保留 legacy Function fallback。
-
-这些仓库边界已较健康，只做 contract/readiness/artifact/smoke 对齐，不做大 rewrite。
-
-Gate：
-
-- 2D real GPU → PNG verify。
-- 2D sidecar restart recovery。
-- 每个 enabled 3D model → GLB verify。
-- 3D capability/readiness cache/cold-start 行为稳定。
-
-# R3 — Deep Repository Purification
-
-三个高风险仓库**串行迁移，不并行改跨仓 Contract**。
-
-## R3A — modal-3D-client
-
-迁移为：
+真实结论：
 
 ```text
-Project
-Preprocess
-Generation Saga
-+ Application Boundary
-+ 外围 Connector/UI Adapter
+modal-2D: 2/2 models verified
+modal-3D: 4/4 models verified
+BiRefNet/current canonicalization verified
+Gateway idempotency verified for all 4 models
+GLB integrity verified for all 4 models
 ```
 
-完成后再进入 R3B。
+这些结果是后续 3D public-input migration 的 parity baseline。
 
-Gate：raw image → preprocess → real 3D → GLB + restart recovery + Connector compatibility。
+# R2 — Repository Topology Correction
 
-## R3B — kaggle-inference-hub
+## R2A — modal-inference-hub
 
-迁移为：
+原 GitHub `modal-3D-client` 已原地 rename 为 `modal-inference-hub`，完整历史保留。
+
+目标身份：Human UI / Project / semantic selection / workflow composition。
+
+## R2B — new modal-3D-client
+
+新独立仓已建立并推送，目标身份：纯 3D Reference Sidecar。
+
+## R2C — AgentScape submodule topology
+
+目标：
 
 ```text
-Consumer API
-Task Core / Queue / Lease
-Worker API
-Artifact Layer
-外围 Prompt/UI
+providers/modal/inference-hub   → modal-inference-hub
+providers/modal/object3d-agent  → new modal-3D-client
 ```
 
-Gate：worker crash/reclaim、consumer isolation、artifact verification。
+Gate：Hub full tests + new 3D Client tests + Connector/root integration tests。
 
-## R3C — modal-build
+# R3 — Capability Boundary Stabilization
 
-迁移为：
+## R3A — modal-2D / modal-2D-client
+
+**状态：DONE。** Shared Artifact identity、Volume-first fetch、recovery、real GPU Gate 已完成。
+
+## R3B — modal-3D / modal-3D-client
+
+先固定：capability/model identity、Provider Artifact identity、Sidecar durable projection、GLB verification。
+
+随后迁 InputConditioner：
 
 ```text
-Build Plane
-    ↓ immutable runtime artifact
-Runtime Plane
+CURRENT public:
+canonical 1024 RGBA
+
+TARGET public:
+image + optional mask/alpha
+        ↓
+Provider InputConditioner
+        ↓
+internal model canonical
 ```
 
-并按 GPU lifecycle 拆分大型 runtime。
+迁移后必须重跑 `041` 四模型矩阵。
 
-Gate：可复现 build、无动态 CUDA build、各 capability real GPU smoke、evidence 分层不回退。
+# R4 — Human Caller Purification
 
-# R4 — AgentScape Core Purification
-
-只有 Provider/Sidecar 边界稳定后才动聚合核心。
-
-顺序：
+`modal-inference-hub`：
 
 ```text
-Composition Root
-   ↓
-Asset Sourcing Port + Legacy Adapter
-   ↓
-Artifact-first verify/compile
-   ↓
-AssetLibrary shrink
-   ↓
-Catalog shrink
-   ↓
-GenerationOrchestrator retire
-   ↓
-Skill surface cleanup
+H1 Project Domain 保留
+H2 Human semantic preprocess 保留
+H3 3D execution → new modal-3D-client
+H4 image generation → modal-2D-client
+H5 candidate workflow 只引用 Sidecar job/artifact
+H6 optional publish → AgentScape Asset API
+H7 删除 Hub 内重复 Provider Job/Volume implementation
 ```
 
-每个切片必须保持 World/Agent 回归。
+Human semantic selection 留 Hub；model-required automatic rembg 下沉 `modal-3D`。
 
-最终 Gate：
+# R5 — AgentScape-agent
+
+新建独立仓库。
 
 ```text
-WorldRuntime 不引用 Connector/Provider 私有实现
-WorldPipeline 只消费 Asset / World IR
-Provider success 不跳过 Artifact/Asset/World verification
+A1 Agent Run / checkpoint
+A2 AgentScape / 2D / 3D / VLM adapters
+A3 source_3d_asset Skill
+A4 build_world Skill
 ```
 
-# R5 — Gateway / Client Simplification
-
-## modal-gen-client
-
-收缩为 Security + Transport：pairing/origin/scope/secret isolation/adapter forwarding/local projection。
-
-## AgentScape-client
-
-收敛为 Reference SDK/CLI + Artifact verifier，支持 direct/HTTP/gateway transport。
-
-Gate：同一 Provider 可通过 reference client 独立验证；Gateway 不拥有业务 composition。
-
-# R6 — New Provider Admission
-
-Kaggle/Embodied/未来 Provider 进入 AgentScape 时统一走：
+旗舰 Gate：
 
 ```text
-Independent Provider Smoke
-    ↓
-Capability Descriptor
-    ↓
-Adapter
-    ↓
-Execution Projection
-    ↓
-Artifact Verify
-    ↓
-Asset Compiler
-    ↓
-AgentScape E2E
+Text
+→ N image candidates
+→ VLM rank/select
+→ 3D
+→ Artifact verify
+→ Asset Repository
+→ World placement
+→ Runtime verification
 ```
 
-禁止直接给 WorldRuntime 加 Provider 特例。
-
-# R7 — Legacy Deletion
-
-只有 parity 证据充分后删除：
-
-- Legacy generation control plane。
-- 重复 Job truth / Store。
-- Connector 对 Domain Store 的 shortcut。
-- Provider payload 直接构造 verified Asset/Manifest 的路径。
-- 旧 full-build runtime path。
-
-删除条件：对应迁移 Gate 全绿 + 无线上/真实 canary 依赖 Legacy。
-
-# R8 — Thin Evidence UI（后置）
-
-UI 首先展示：
+# R6 — AgentScape Core Purification
 
 ```text
-Agent decision
-Capability binding
-Execution
-Artifact lineage
-Verification findings
-Asset admission
-World findings
+C1 stable Asset API
+C2 Asset Repository
+C3 move Agent/Skills to AgentScape-agent
+C4 caller-driven publish_asset(Artifact)
+C5 AssetLibrary → repository only
+C6 remove WorldRuntime → ConnectorClient
+C7 retire GenerationOrchestrator
+C8 ProviderRegistry leaves domain path
+C9 preserve World Compiler/Runtime behavior
 ```
 
-不要先做复杂 Studio/资产产品。
+最终：AgentScape Core 在零生成 Provider 配置下也能独立运行 Asset/World/Runtime。
+
+# R7 — Kaggle / modal-build Purification
+
+Kaggle：Consumer API / Task Core / Queue+Lease / Worker API / Artifact Layer。
+
+modal-build：Build Plane → immutable runtime artifact → Runtime Plane。
+
+# R8 — Optional Gateway / SDK Cleanup
+
+`modal-gen-client` 收缩成 pairing/origin/scope/credential isolation/mechanical forwarding。
+
+`AgentScape-client` 收缩成 AgentScape Domain SDK/CLI。
+
+# R9 — Legacy Deletion
+
+只在 parity 全绿后删除：
+
+- AgentScape `GenerationOrchestrator`。
+- WorldRuntime Provider construction。
+- Hub 内旧直接 Modal 3D execution/store。
+- Connector 指向旧 3D Hub execution endpoints 的路径。
+- duplicate Job truth。
+- public canonical-RGBA-only 3D contract（InputConditioner 完成后）。
+- Provider payload 直接冒充 ready Asset 的路径。
 
 # 全局迁移规则
 
-## 一次只改变一个 Ownership
-
-一个切片可以改很多行，但只能改变一个主要 State Owner/边界。
-
-## Strangler
-
-```text
-New Port
-   ├─ Legacy Adapter → old implementation
-   └─ New implementation
-```
-
-先 parity，再删 old。
-
-## 不提前抽象
-
-两个实现不自动意味着要建 framework。只有稳定差异与重复 contract 被真实证明后才抽象。
-
-## 重构停止条件
-
-如果一个仓库已经：
-
-```text
-identity 清晰
-state owner 清晰
-独立 smoke 清晰
-跨仓 contract 清晰
-```
-
-即使内部文件不“漂亮”，也停止继续拆。
+1. 一次只改变一个主要 Ownership。
+2. Strangler：新边界先接 Legacy Adapter，parity 后删除旧实现。
+3. 破坏性 Contract 迁移前先保存真实 baseline experiment。
+4. 两个实现不自动意味着要建 framework。
+5. 当 identity/state/input-output/failure/retry/smoke/contract 都清晰时停止继续拆。

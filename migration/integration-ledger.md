@@ -1,6 +1,23 @@
 # Integration Ledger
 
-本文件记录**当前真实箭头**与目标判定。每次跨仓迁移必须更新本表。
+本文件记录**当前真实箭头**和**目标箭头**。Architecture Card 描述 Target；Ledger 负责防止我们把 Target 当成 Reality。
+
+状态：`KEEP` 保留；`MOVE` 改 Owner；`SIMPLIFY` 收缩；`REMOVE` 删除；`ADD` 新增；`MIGRATED` 已完成并有证据；`VERIFY` 尚未确认。
+
+## 1. Caller Layer
+
+| Arrow | Current | Target | Verdict |
+|---|---|---|---|
+| `User Text → AgentScape internal ToolCallingAgent` | Agent 仍在 AgentScape Core 内 | `User Text → AgentScape-agent` 独立仓 | **MOVE / ADD REPO** |
+| `AgentScape-agent → modal-2D-client` | 不存在 | Agent image-generation Tool Adapter | **ADD** |
+| `AgentScape-agent → modal-3D-client` | 不存在 | Agent 3D-generation Tool Adapter | **ADD** |
+| `AgentScape-agent → AgentScape` | 不存在 | search/publish Asset + build/observe World | **ADD** |
+| `Human → old modal-3D-client UI` | 存在；仓库同时拥有 Project/Preprocess/3D execution | `Human → modal-inference-hub` | **RENAME + PURIFY** |
+| `modal-inference-hub → modal-2D-client` | 尚未形成稳定边界 | image candidate workflow | **ADD** |
+| `modal-inference-hub → modal-3D-client` | 旧 Hub 仍直接执行 3D | 改为纯 Sidecar 调用 | **MOVE** |
+| `modal-inference-hub → AgentScape` | 非核心稳定路径 | optional publish Asset / inspect World | **ADD OPTIONAL** |
+
+## 2. AgentScape Current Coupling
 
 当前代码审计锚点：
 
@@ -10,89 +27,113 @@ AgentScape/src/generation/GenerationOrchestrator.js
 AgentScape/src/providers/ProviderRegistry.js
 AgentScape/src/assets/library/AssetLibrary.js
 AgentScape/src/adapters/EmbodiedGenAdapter.js
-modal-gen-client/modal_gen/jobs.py
-modal-gen-client/modal_gen/storage.py
-modal-3D-client/agent/projects.py
-modal-3D-client/agent/jobs.py
-modal-3D-client/agent/generation_store.py
-modal-3D-client/agent/connector/*
-kaggle-inference-hub/hub/app.py
-kaggle-inference-hub/hub/state.py
-modal-build/runtime/embodiedgen_v2_l40s.py
 ```
 
-状态：`KEEP` 保留；`MOVE` 移动 Owner；`SIMPLIFY` 收缩；`REMOVE` 最终删除；`ADD` 新增目标边界；`VERIFY` 当前没有足够证据，不假装存在。
-
-## 1. AgentScape 内部到 Provider 链
-
-| From → To | 当前用途 | 当前 Owner/问题 | Target | Verdict |
-|---|---|---|---|---|
-| `WorldRuntime → ConnectorClient` | Runtime 初始化生成连接 | World Domain 知道 transport/Provider | Provider 创建移出 Runtime；Runtime 只消费 Asset | **REMOVE** |
-| `WorldRuntime → GenerationOrchestrator` | Runtime 暴露生成能力 | Runtime 与 generation lifecycle 耦合 | 移到 Asset Sourcing/Application composition | **MOVE** |
-| `AssetLibrary → GenerationOrchestrator` | miss 后生成资产 | Library 同时 search/resolve/generate | AssetLibrary 只管理 existing assets；生成由 Asset Sourcing | **REMOVE** |
-| `GenerationOrchestrator → ProviderRegistry` | discovery/select/execute/composition | Orchestrator 同时拥有太多 lifecycle | Catalog 只 resolve；执行/组合留在 Asset Sourcing 的小状态机 | **SIMPLIFY** |
-| `GenerationOrchestrator → Asset Compiler` | 生成后导入/compile | execution 与 domain compile 混合 | Execution 产 Artifact；AssetSourcing 显式 verify → compile | **MOVE** |
-| `AgentScape → EmbodiedGenAdapter` | provider payload/evidence 适配 | legacy adapter 可直接构造 provisional manifest | bundle/artifact/evidence → verifier → existing AssetCompiler | **SIMPLIFY** |
-
-## 2. AgentScape / Client 到 Local Gateway
-
-| From → To | 当前用途 | Target | Verdict |
+| Arrow | Current Problem | Target | Verdict |
 |---|---|---|---|
-| `AgentScape ConnectorClient → modal-gen-client` | capability/jobs/artifacts transport | 保留为一个可选 Transport Adapter，不是唯一 Provider 路径 | **KEEP + SIMPLIFY** |
-| `AgentScape-client → modal-gen-client` | reference client / local gateway 调用 | 保留 optional gateway transport | **KEEP** |
-| Browser/WebView → `modal-gen-client` | 本机 privileged boundary | pairing/origin/scope/secret isolation | **KEEP** |
+| `WorldRuntime → ConnectorClient` | World Domain 知道 transport/provider | WorldRuntime 只消费 compiled Asset/World | **REMOVE** |
+| `WorldRuntime → GenerationOrchestrator` | Runtime 与 generation lifecycle 耦合 | generation 移到 Caller (`AgentScape-agent`/Hub) | **REMOVE** |
+| `AssetLibrary → GenerationOrchestrator` | Repository 同时 search + generate | Asset Repository 只 search/get/store | **REMOVE** |
+| `GenerationOrchestrator → ProviderRegistry` | discovery/execute/composition 混合 | Agent/Hub Tool Adapter 调 Sidecar | **RETIRE** |
+| `GenerationOrchestrator → AssetCompiler` | provider execution 和 domain compile 混合 | Caller 显式 `publish_asset(Artifact)` | **MOVE** |
+| `AgentScape internal Agent → provider jobs` | Agent sees low-level execution surface | 独立 Agent 选择 Skill；Skill 隐藏 poll/download | **MOVE** |
 
-## 3. Local Gateway 到 Provider Sidecar
+## 3. modal-2D Path
 
-| From → To | 当前用途 | Target | Verdict |
+| Arrow | Current | Target | Verdict |
 |---|---|---|---|
-| `modal-gen-client → modal-2D-client` | 2D capability/jobs/artifact adapter | 机械 transport adapter；不含 image workflow 策略 | **KEEP + SHRINK** |
-| `modal-gen-client → modal-3D-client` | 3D capability/jobs/artifact adapter | 机械 transport adapter；只调用 Application API | **KEEP + SHRINK** |
-| Gateway storage → provider job/artifact refs | 本地 job/artifact projection | 明确标注 projection，不成为 canonical execution/artifact truth | **SIMPLIFY** |
+| `modal-2D-client → modal-2D` | durable mirror + Volume-first Artifact fetch | 保持 | **MIGRATED 2026-08-27** |
+| `modal-gen-client → modal-2D-client` | Connector adapter 已存在 | optional security transport only | **KEEP + SHRINK** |
+| `AgentScape-agent → modal-2D-client` | 不存在 | prompt → candidate image jobs | **ADD** |
+| `modal-inference-hub → modal-2D-client` | 不存在稳定调用 | human image candidate generation | **ADD** |
 
-## 4. Sidecar 到 Provider Runtime
+真实 Gate：`040-modal-2d-provider`。
 
-| From → To | 当前用途 | Target | Verdict |
-|---|---|---|---|
-| `modal-2D-client → modal-2D` | Modal remote execution + Volume-first Artifact fetch | local durable mirror → provider execution → verified PNG cache | **KEEP / MIGRATED 2026-08-27** |
-| `modal-3D-client → modal-3D` | Modal remote 3D execution | Generation Saga → provider execution → GLB | **KEEP** |
-| `modal-3D-client connector/* → internal stores` | Connector compatibility | Connector 只能调用 Application Boundary，不直接操作 Domain Store | **MOVE** |
+## 4. modal-3D Path
 
-## 5. Embodied / Build / Research
-
-| From → To | 当前用途 | Target | Verdict |
-|---|---|---|---|
-| `modal-build → EmbodiedGen` | pinned source / patch / build / runtime | Build Plane 唯一 compatibility owner | **KEEP** |
-| AgentScape → Embodied provider bundle/evidence | consume 3D/affordance evidence | Artifact/evidence bridge → existing verifier/compiler；不构造 verified manifest | **SIMPLIFY** |
-| AgentScape → `modal-lab` | 无 canonical production dependency | 永久保持无 runtime dependency | **KEEP ABSENT** |
-| `modal-lab → production repo` | 手工实验成果迁移 | 通过 reproducible/evidence/promotion gate 重写进入 production | **ADD PROCESS** |
-
-## 6. Kaggle
-
-当前 `kaggle-inference-hub` 自身已明确拥有 task/claim/heartbeat/upload/history 等 queue/worker 协议；**当前 AgentScape 主链是否存在 canonical direct adapter 不作为既定事实**。
-
-目标新增边界：
+当前现实：
 
 ```text
-AgentScape / Reference Client
-          │ Consumer Contract
-          ▼
-kaggle-inference-hub Consumer API
-          │
-          ▼
-Queue / Lease / Worker Protocol
+old modal-3D-client (renamed remote → modal-inference-hub)
+  owns Project + rembg/preprocess + Modal session + generation Job + GLB artifact
+                    │
+                    ▼
+                 modal-3D
 ```
 
-在真正启用 AgentScape runtime adapter 前必须先完成 Consumer API 与 Worker API 分离。
+目标：
 
-**Verdict：VERIFY CURRENT / ADD TARGET AFTER KAGGLE MIGRATION。**
+```text
+modal-inference-hub               AgentScape-agent
+        │                               │
+        └──────────────┬────────────────┘
+                       ▼
+               modal-3D-client
+        transport / durable execution
+                       │
+                       ▼
+                   modal-3D
+                 InputConditioner
+                       │
+                       ▼
+                   3D Worker
+```
 
-## 7. Integration Rule
+| Arrow | Current | Target | Verdict |
+|---|---|---|---|
+| `old Hub generation code → modal-3D` | 直接 Modal execution | Hub → new modal-3D-client | **MOVE** |
+| `old Hub preprocess → canonical RGBA` | Project-level rembg/component/canonical | Human semantic selection 留 Hub；model-required conditioning 下沉 Provider | **SPLIT OWNERSHIP** |
+| `new modal-3D-client → modal-3D` | 新仓已建立；初版要求 canonical RGBA | Sidecar 上传 image + optional mask，不拥有 rembg | **ADD / ADJUST CONTRACT** |
+| `modal-3D Provider API → canonical RGBA` | 当前公开 contract | public image/mask → internal canonical | **MOVE CONDITIONING INTO PROVIDER** |
+| `modal-gen-client → old 3D client` | 现有 adapter 指向旧应用 | 指向 new modal-3D-client | **MOVE** |
 
-任何新箭头必须写清：
+真实 Gate：`041-modal-3d-provider`，先记录当前 canonical baseline，再迁 InputConditioner。
+
+## 5. Candidate Selection
+
+| Responsibility | Owner |
+|---|---|
+| Human manual selection/mask edit | `modal-inference-hub` |
+| Agent/VLM candidate ranking | `AgentScape-agent` |
+| Provider automatic model conditioning | `modal-3D` |
+| Sidecar transport validation | `modal-3D-client` |
+
+禁止把“用户想选哪个物体”和“模型需要怎样 crop/rembg”重新合并成一个 Preprocess Service。
+
+## 6. Artifact → Asset → World
+
+| Arrow | Current | Target | Verdict |
+|---|---|---|---|
+| Provider output → `GenerationOrchestrator` import | 自动 generation path | Caller gets verified Artifact | **REMOVE LEGACY** |
+| Caller → AgentScape Asset API | 不统一 | `publish_asset(Artifact)` 稳定入口 | **ADD** |
+| Asset → World | 已存在 compiler/pipeline | World references reusable Asset ID | **KEEP + PURIFY** |
+| WorldRuntime → Provider | 仍有 legacy coupling | 永久禁止 | **REMOVE** |
+
+## 7. modal-gen-client
+
+| Arrow | Current | Target | Verdict |
+|---|---|---|---|
+| Browser → modal-gen-client | pairing/origin/scope | 保留 | **KEEP** |
+| modal-gen-client → Sidecar | 同时带有历史 business routing | mechanical authorization/forwarding only | **SIMPLIFY** |
+| Server-side Agent/Hub → modal-gen-client | 可能被当统一中枢 | 可直接调用 Sidecar，不强制 Gateway | **REMOVE AS REQUIREMENT** |
+
+## 8. Kaggle / Embodied / Research
+
+| Arrow | Current | Target | Verdict |
+|---|---|---|---|
+| Caller → kaggle-inference-hub | AgentScape 主链未形成 canonical adapter | Consumer API Adapter | **VERIFY / ADD AFTER KAGGLE REWRITE** |
+| `modal-build → EmbodiedGen` | pinned build/runtime | Build Plane compatibility owner | **KEEP** |
+| Provider evidence → AgentScape | legacy adapter 可构造 domain payload | Artifact/Finding → AgentScape admission | **SIMPLIFY** |
+| Production Runtime → modal-lab | 无 canonical dependency | 永久保持无 dependency | **KEEP ABSENT** |
+| modal-lab → Architecture | 以前主要研究 | experiment evidence 可修改 Card/ADR | **ADD PROCESS** |
+
+## 9. Integration Rule
+
+任何新跨仓箭头必须回答：
 
 ```text
 Purpose
+Caller
 Contract Owner
 Transport Owner
 State Owner
@@ -102,4 +143,4 @@ Artifact Owner
 Failure mapping
 ```
 
-如果一条箭头需要共享对方私有 Store/ORM/内部 class 才能工作，默认判定为架构违规。
+如果一条箭头需要 Caller 直接访问对方私有 SQLite/ORM/model object，默认判定为架构违规。

@@ -148,3 +148,59 @@ Connector / caller
 ```
 
 `remote_path` / Modal Volume 仍是 Provider-private transport；AgentScape 不感知该位置。
+
+
+# 9. Provider Verification Experiments — 040 / 041
+
+2026-08-27 已完成真实 Provider baseline：
+
+```text
+040-modal-2d-provider   PASS
+041-modal-3d-provider   PASS
+```
+
+## modal-2D
+
+```text
+SANA-Sprint 0.6B / seed 42   PASS   834149 bytes
+SANA-Sprint 0.6B / seed 73   PASS   818196 bytes
+SANA-Sprint 1.6B / seed 42   PASS  1026180 bytes
+SANA-Sprint 1.6B / seed 73   PASS   675018 bytes
+```
+
+所有候选：real GPU、1024×1024 PNG、Volume read、bytes/SHA-256/producer 一致；同模型不同 seed digest 不同。
+
+## modal-3D preprocessing baseline
+
+```text
+engine              birefnet-general-lite
+execution           cloud
+foreground ratio    0.2843132019042969
+component count     1
+canonical            1024×1024 RGBA
+alpha extrema        0–255
+```
+
+## modal-3D model matrix
+
+```text
+FastSAM3D++           PASS   7,515,508 bytes   67.520s
+Hermite-TRELLIS2++    PASS  36,759,736 bytes  373.589s
+Hunyuan2.1++          PASS  43,326,464 bytes  725.648s
+Pixal3D               PASS  35,423,056 bytes  366.035s
+```
+
+四个模型均满足：
+
+```text
+same model + same input + same options
+→ duplicate gateway submit
+→ same callId
+
+GLB magic = glTF
+GLB version = 2
+declared bytes = actual bytes
+SHA-256 = descriptor SHA-256
+```
+
+这些结果是后续 `modal-3D InputConditioner` public-contract 迁移的 baseline；迁移后必须重跑同一实验矩阵并保持 parity。

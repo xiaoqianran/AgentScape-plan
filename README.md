@@ -7,7 +7,7 @@
 ## 权威顺序
 
 1. [`architecture/system-landscape.md`](architecture/system-landscape.md) — 系统边界、仓库角色、全局不变量。
-2. [`architecture/repository-cards.md`](architecture/repository-cards.md) — 12 个仓库的目标 Architecture Card；仓库重写以此为目标。
+2. [`architecture/repository-cards.md`](architecture/repository-cards.md) — 14 个仓库的目标 Architecture Card；仓库重写以此为目标。
 3. [`architecture/shared-contracts.md`](architecture/shared-contracts.md) — 跨仓库稳定语义：Capability、Execution、Artifact、Finding、Asset、World。
 4. [`architecture/runtime-views.md`](architecture/runtime-views.md) — 关键运行链路与状态/失败所有权。
 5. [`migration/integration-ledger.md`](migration/integration-ledger.md) — 当前真实箭头、目标箭头、KEEP/MOVE/SIMPLIFY/REMOVE 判定。
