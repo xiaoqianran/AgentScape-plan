@@ -122,19 +122,35 @@ Text
 
 # R6 — AgentScape Core Purification
 
+**状态：IN PROGRESS — Asset/World fracture plane 已有 executable evidence。**
+
+| Slice | Status | Evidence |
+|---|---|---|
+| C1 stable Asset boundary | **PARTIAL** | `9fb7fec`：`AssetRef` + World Compilation v2 已稳定；public publish API 待收口 |
+| C2 Asset Repository/state owner | **DONE (module boundary)** | `0a41a93`：AssetManager/Store/Catalog 归 Asset Module；唯一生产构造点为 `createAssetModule()` |
+| C3 move Agent/Skills out | **IN PROGRESS elsewhere** | Agent 独立仓已建立；本迁移线不改 Agent |
+| C4 caller-driven `publish_asset(Artifact)` | **PARTIAL** | VerifiedArtifactAssetPipeline/experiment 已通过；外部 API 待稳定 |
+| C5 AssetLibrary → compatibility facade | **PARTIAL** | ProviderRegistry 已移出；legacy `AssetGenerationPort` 尚保留 |
+| C6 remove WorldRuntime → Connector/Generation | **DONE** | `bc3be81`；architecture test fail-closed |
+| C7 retire GenerationOrchestrator | **TODO** | 当前仅在 LegacyAuthoringShell |
+| C8 ProviderRegistry leaves Asset/World domain | **DONE for domain core** | `7bafc7c`；仅 authoring shell 持有 |
+| C9 preserve World Compiler/Runtime behavior | **PASS** | 742/742 root tests + independent World experiment |
+
+已验证结构：
+
 ```text
-C1 stable Asset API
-C2 Asset Repository
-C3 move Agent/Skills to AgentScape-agent
-C4 caller-driven publish_asset(Artifact)
-C5 AssetLibrary → repository only
-C6 remove WorldRuntime → ConnectorClient
-C7 retire GenerationOrchestrator
-C8 ProviderRegistry leaves domain path
-C9 preserve World Compiler/Runtime behavior
+Asset Module
+  createAssetModule()
+  → Manager / Store / Catalog
+  → AssetRef
+       ↓
+World Core
+  injected Asset module
+  → World Compilation v2
+  → execution entities contain AssetRef only
 ```
 
-最终：AgentScape Core 在零生成 Provider 配置下也能独立运行 Asset/World/Runtime。
+最终目标不变：AgentScape Core 在零生成 Provider 配置下也能独立运行 Asset/World/Runtime。
 
 # R7 — Kaggle / modal-build Purification
 

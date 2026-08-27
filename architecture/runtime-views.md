@@ -255,6 +255,25 @@ Verification
 
 Asset identity 与 World placement 永久分离。
 
+当前已验证 execution seam：
+
+```text
+Caller / legacy authoring
+  assetRequests: query / generate / provider
+                │
+                ▼ resolve/admit
+Asset Module ── AssetRef { assetId }
+                │
+                ▼
+World Compilation v2
+  entities: id + assetRef + transform/state
+                │
+                ▼
+Layout / Behavior / Physics / Runtime
+```
+
+`query / generate / provider` 不再穿透到 World execution；兼容 resolution evidence 独立保存在 `assetResolutions`。
+
 # 8. Desired State Reconciliation
 
 ```text

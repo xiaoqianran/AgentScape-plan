@@ -82,20 +82,42 @@ Asset Repository
 World references Asset
 ```
 
-**迁移目标**
+**已验证模块边界（2026-08-28）**
 
 ```text
-REMOVE:
-WorldRuntime → ConnectorClient
-WorldRuntime → GenerationOrchestrator
-AssetLibrary → generation
+Asset Module
+  owns AssetManager / CompiledAssetStore / AssetCatalog
+  creates state only through createAssetModule()
+        │
+        │ AssetRef { assetId }
+        ▼
+World Core
+  consumes injected Asset module
+  WorldRuntime imports no Asset implementation
+  World execution entities carry AssetRef only
 
-TARGET:
-Caller generates Artifact
-        ↓
-Caller publish_asset(Artifact)
-        ↓
-AgentScape compiles/stores Asset
+Authoring Compatibility Shell
+  owns ProviderRegistry / Connector / GenerationOrchestrator
+  exposes narrow AssetGenerationPort to legacy AssetLibrary
+```
+
+已完成：
+
+```text
+WorldRuntime → ConnectorClient            REMOVED
+WorldRuntime → GenerationOrchestrator     REMOVED
+WorldRuntime → Provider/Compiler authoring REMOVED
+AssetLibrary → ProviderRegistry           REMOVED
+World execution → query/generate/provider REMOVED
+```
+
+仍待迁移：
+
+```text
+Caller publish_asset(Artifact) public API stabilization
+AssetLibrary generation compatibility retirement
+GenerationOrchestrator retirement
+legacy WorldIR authoring request fields retirement after caller parity
 ```
 
 **架构参考**：DDD Modular Monolith、OpenUSD Asset/Scene composition、MLIR compiler passes、Kubernetes desired/observed reconciliation。

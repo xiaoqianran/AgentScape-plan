@@ -269,3 +269,74 @@ Agent
 ```
 
 未验证的内容必须继续标记为未完成：真实 VLM ranking、Asset publication、World placement、跨进程 Tool resume。
+
+
+# 11. AgentScape Asset / World Modular Boundary — 2026-08-28
+
+已完成五个独立、逐步验证并推送的迁移切片：
+
+```text
+7a7adea  refactor: establish asset and world module boundaries
+bc3be81  refactor: move authoring out of world runtime
+7bafc7c  refactor: move provider generation behind asset port
+9fb7fec  refactor: isolate world execution behind asset refs
+0a41a93  refactor: move asset state ownership into asset module
+```
+
+当前结构证据：
+
+```text
+Asset state owner
+  src/assets/createAssetModule.js
+  ├─ AssetManager
+  ├─ CompiledAssetStore
+  └─ AssetCatalog
+
+Asset → World contract
+  AssetRef { assetId }
+
+WorldRuntime
+  requires injected assetModule
+  imports no Asset implementation
+  imports no Connector / Provider / Generation authoring
+
+World Compilation v2
+  assetRequests = authoring compatibility only
+  entities      = execution projection with AssetRef
+```
+
+独立 Gate：
+
+```text
+Asset tests                    107/107 PASS
+World tests                    165/165 PASS
+AgentScape root tests          742/742 PASS
+production build               PASS
+repository architecture        PASS (11 pinned submodules)
+domain architecture            PASS
+asset validation               PASS
+```
+
+Asset experiment：
+
+```text
+real FastSAM3D++ GLB           7,515,508 bytes
+Artifact → Compiler → Admission → Catalog  PASS
+Asset                          experiment_red_apple
+Admission                      provisional
+Reason                         BUDGET_RENDER_VERTICES
+Searchable                     true
+```
+
+World experiment：
+
+```text
+Provider generation            NOT USED
+existing AssetRefs             table + cup
+relation                       cup_01 ON table_01
+World admission                ready
+execution entities             AssetRef only
+query/generate/provider leak   none
+```
+
+结论：独立测试能力已经在同一 Repository 内成立；当前没有证据要求立即物理拆分 `AgentScape-Asset` / `AgentScape-World`。继续按 Extract by Pressure 观察 state lifecycle、release cadence、dependency/failure isolation 与 change coupling。

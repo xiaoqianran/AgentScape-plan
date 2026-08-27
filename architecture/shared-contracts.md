@@ -124,6 +124,24 @@ rejected
 
 Provider 不得直接声明 AgentScape Asset 已验证。
 
+## 5.1 AssetRef — Asset → World 的最小公共契约
+
+World 不接收 Provider payload，也不依赖完整 Asset manifest 作为身份接口。编译后的 World execution 只通过：
+
+```text
+AssetRef
+└─ assetId
+```
+
+规则：
+
+- `AssetRef` 表示稳定 reusable Asset identity，不表示 World instance。
+- `query / prompt / generate / provider` 属于 Caller/Authoring request，不得进入 World execution entity。
+- World compilation 可以暂时保留独立 `assetRequests` 兼容输入，但 execution `entities` 只能携带 `assetRef`。
+- Asset state 由 Asset Module 创建和拥有；WorldRuntime 通过 composition root 注入后消费。
+
+当前实现锚点：`src/assets/AssetRef.js`、`src/assets/createAssetModule.js`，`agentscape.world-compilation` 已升级为 v2 以显式表达该结构变化。
+
 # 6. World
 
 ```text
