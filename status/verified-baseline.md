@@ -282,6 +282,7 @@ bc3be81  refactor: move authoring out of world runtime
 9fb7fec  refactor: isolate world execution behind asset refs
 0a41a93  refactor: move asset state ownership into asset module
 9369e12  feat: stabilize asset publication api
+a0b522a  refactor: retire asset library generation compatibility
 ```
 
 当前结构证据：
@@ -311,7 +312,7 @@ World Compilation v2
 ```text
 Asset tests                    107/107 PASS
 World tests                    165/165 PASS
-AgentScape root tests          747/747 PASS
+AgentScape root tests          748/748 PASS
 production build               PASS
 repository architecture        PASS (11 pinned submodules)
 domain architecture            PASS
@@ -378,7 +379,7 @@ createAssetModule()
 验证：
 
 ```text
-AgentScape root tests          747/747 PASS
+AgentScape root tests          748/748 PASS
 production build               PASS
 repository/domain architecture PASS
 asset validation               PASS
@@ -388,4 +389,43 @@ returned AssetRef              PASS
 idempotent reuse               PASS
 provenance conflict fail-close PASS
 compiler rejection no-register PASS
+```
+
+
+## 11.2 AssetLibrary Read-Only Boundary — 2026-08-28
+
+`a0b522a refactor: retire asset library generation compatibility` 完成 Asset read facade 与 Authoring generation 的最终分离：
+
+```text
+AssetLibrary
+  ├─ has/get/list/search/summary
+  └─ resolveExisting
+
+LegacyAuthoringShell
+  ├─ canGenerateAsset
+  ├─ generateAsset
+  ├─ resolveAssetRequest
+  └─ AssetGenerationPort
+```
+
+禁止回退：
+
+```text
+AssetLibrary.generate          REMOVED
+AssetLibrary.resolve(generate) REMOVED
+AssetLibrary.canGenerate       REMOVED
+AssetLibrary.generationPort    REMOVED
+AssetLibrary provider knowledge REMOVED
+```
+
+Architecture validator 现在把 `AssetLibrary` 作为 Asset Core read-only facade 检查；generation surface 重新出现会 fail CI。
+
+验证：
+
+```text
+targeted migration tests       53/53 PASS
+AgentScape root tests          748/748 PASS
+production build               PASS
+domain architecture            PASS
+Asset/World independent gates  PASS
 ```

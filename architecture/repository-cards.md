@@ -100,7 +100,11 @@ World Core
 
 Authoring Compatibility Shell
   owns ProviderRegistry / Connector / GenerationOrchestrator
-  exposes narrow AssetGenerationPort to legacy AssetLibrary
+  owns legacy AssetGenerationPort / generated-manifest admission path
+
+AssetLibrary
+  read-only facade over AssetCatalog
+  no generation/provider surface
 ```
 
 已完成：
@@ -110,6 +114,7 @@ WorldRuntime → ConnectorClient            REMOVED
 WorldRuntime → GenerationOrchestrator     REMOVED
 WorldRuntime → Provider/Compiler authoring REMOVED
 AssetLibrary → ProviderRegistry           REMOVED
+AssetLibrary → generation compatibility   REMOVED
 GenerationOrchestrator → AssetCompiler     REMOVED
 World execution → query/generate/provider REMOVED
 ```
@@ -117,7 +122,6 @@ World execution → query/generate/provider REMOVED
 仍待迁移：
 
 ```text
-AssetLibrary generation compatibility retirement
 GenerationOrchestrator retirement
 legacy WorldIR authoring request fields retirement after caller parity
 ```

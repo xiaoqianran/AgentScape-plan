@@ -33,7 +33,7 @@ AgentScape/src/adapters/EmbodiedGenAdapter.js
 |---|---|---|---|
 | `WorldRuntime → ConnectorClient` | World Domain 知道 transport/provider | WorldRuntime 只消费 compiled Asset/World | **REMOVE** |
 | `WorldRuntime → GenerationOrchestrator` | Runtime 与 generation lifecycle 耦合 | generation 移到 Caller (`AgentScape-agent`/Hub) | **REMOVE** |
-| `AssetLibrary → GenerationOrchestrator` | Repository 同时 search + generate | Asset Repository 只 search/get/store | **REMOVE** |
+| `AssetLibrary → GenerationOrchestrator` | Repository 同时 search + generate | AssetLibrary 只 read/search/get | **MIGRATED 2026-08-28 (`a0b522a`)** |
 | `GenerationOrchestrator → ProviderRegistry` | discovery/execute/composition 混合 | Agent/Hub Tool Adapter 调 Sidecar | **RETIRE** |
 | `GenerationOrchestrator → AssetCompiler` | provider execution 和 domain compile 混合 | `assetModule.publishAsset(Artifact)` | **MIGRATED 2026-08-28 (`9369e12`)** |
 | `AgentScape internal Agent → provider jobs` | Agent sees low-level execution surface | 独立 Agent 选择 Skill；Skill 隐藏 poll/download | **MOVE** |
