@@ -211,7 +211,7 @@ SHA-256 = descriptor SHA-256
 2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
 
 ```text
-AgentScape-agent  e8af6ab  feat: preflight sidecar capabilities
+AgentScape-agent  f4add25  docs: record verified cancellation propagation
 ```
 
 代码形态：
@@ -224,7 +224,7 @@ src/source_3d_asset.js  single-file Vertical Slice
 验证：
 
 ```text
-node:test                         25/25 PASS
+node:test                         34/34 PASS
 node --check                      PASS
 real modal-2D-client health       PASS
 real modal-2D candidate run       4/4 PASS
@@ -462,3 +462,82 @@ World experiment              PASS
 ```
 
 测试数量从 748 降至 746 仅因为删除 `tests/asset-library.test.js` 中两个已无意义的 facade tests，不是功能回归。
+
+
+## 11.4 End-to-End Cancellation Ownership — 2026-08-28
+
+取消链已经从 Caller 贯穿到真实 Sidecar durable Job：
+
+```text
+AbortSignal
+   ↓
+Agent Run
+   ↓
+high-level Tool
+   ↓
+source_3d_asset
+   ↓
+2D / VLM / 3D adapter
+   ↓
+DELETE deterministic jobId
+   ↓
+Sidecar cancel_requested
+   ↓
+remote cancellation
+   ↓
+cancelled
+```
+
+关键修复提交：
+
+```text
+modal-2D-client
+625c72c  fix: honor cancellation during image submission
+
+modal-3D-client
+32ab2f1  fix: preserve 3d cancellation intent while polling
+abe29a1  fix: honor cancellation during remote submission
+5f8510f  fix: keep cancellation pending until remote bind settles
+cf6526b  fix: keep sidecar responsive during 3d submission
+
+AgentScape-agent
+0c52996  feat: propagate cancellation through agent workflows
+f4add25  docs: record verified cancellation propagation
+
+AgentScape
+b5bf79f  chore: sync cancellation sidecar fixes
+```
+
+验证：
+
+```text
+modal-2D-client ruff             PASS
+modal-2D-client pytest           38/38 PASS
+modal-3D-client ruff             PASS
+modal-3D-client pytest           25/25 PASS
+AgentScape-agent node:test       34/34 PASS
+source_3d_asset replay           5/5 PASS
+Agent trajectory replay          5/5 PASS
+AgentScape architecture validate PASS (11 pinned submodules)
+```
+
+真实 2D 取消：
+
+```text
+jobId       agent2d_9f0b6f515b54d6a0b9775a27
+final       cancelled
+errorCode   remote.cancelled
+retryable   false
+```
+
+真实 3D 取消：
+
+```text
+jobId       agent3d_bf6c61e8ca725a8bd7b1e7b0
+appeared    running
+final       cancelled
+errorCode   remote.cancelled
+retryable   false
+```
+
+3D Sidecar 额外修复了 async HTTP event-loop 被同步 Modal submit 阻塞的问题：`POST /v1/jobs` 现在把同步 submit 放入 FastAPI threadpool，因此同一 Sidecar 在提交期间仍能处理 GET/DELETE cancellation request。Sidecar 在 remote call 尚未绑定时保留 `cancel_requested`，remote id 返回后重新读取最新 durable state，并在需要时立即取消刚绑定的 remote call，避免后台 GPU Job 泄漏。
