@@ -96,16 +96,16 @@ Human semantic selection 留 Hub；model-required automatic rembg 下沉 `modal-
 
 # R5 — AgentScape-agent
 
-**状态：IN PROGRESS。** 独立仓库 `xiaoqianran/AgentScape-agent` 已建立；它是与 `modal-inference-hub` 平级的 Caller，不作为 AgentScape Core 的运行时 submodule 依赖。
+**状态：DONE（旗舰迁移切片）。** 独立仓库 `xiaoqianran/AgentScape-agent` 已建立；它是与 `modal-inference-hub` 平级的 Caller，不作为 AgentScape Core 的运行时 submodule 依赖。
 
 ```text
-A1 Agent Run / tool loop + checkpoint    DONE (resume gated)
+A1 Agent Run / tool loop + checkpoint    DONE (cross-process resume verified)
 A2 AgentScape / 2D / 3D / VLM adapters  DONE (real one-shot verified)
 A3 source_3d_asset Skill                 DONE
 A4 build_world                           DONE inside one-shot slice; no extraction pressure
 ```
 
-当前实现继续遵循 Experiment-oriented Modular Monolith：生产代码保持少量高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出；`source_3d_asset.js` 保持 Text → candidates → VLM selection → 3D → Asset 的单文件 Vertical Slice；`run_text_to_world.js` 只组合 source Asset 与 World/Runtime verification。真实旗舰链已经完成 4 × SANA-Sprint 1.6B → `stepfun-ai/step-3.7-flash` Vision ranking → FastSAM3D++ → verified GLB → ArtifactRegistry → AssetCompiler → WorldPipeline → Runtime `ON table` verification，最终 `completed / verified`。2D/3D Adapter 继续通过 Sidecar `/v1/models` 做 lazy capability preflight；未知 model/profile 在 GPU submit 前 fail-closed。Cancellation Ownership 也已贯穿 Agent Run → high-level Tool → `source_3d_asset` → 2D/VLM/3D Adapter → Sidecar DELETE。2D Job identity 已修正为 per-run scope，避免跨 Run 复用历史中断 Job。Agent step 已支持原子 checkpoint；**当前唯一 gated 项是跨进程 Tool resume / 自动恢复**。在没有独立 State Owner、failure lifecycle、deployment 或真实性能压力前，不抽独立 `build_world` service。
+当前实现继续遵循 Experiment-oriented Modular Monolith：生产代码保持少量高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出；`source_3d_asset.js` 保持 Text → candidates → VLM selection → 3D → Asset 的单文件 Vertical Slice；`run_text_to_world.js` 只组合 source Asset 与 World/Runtime verification。真实旗舰链已经完成 4 × SANA-Sprint 1.6B → `stepfun-ai/step-3.7-flash` Vision ranking → FastSAM3D++ → verified GLB → ArtifactRegistry → AssetCompiler → WorldPipeline → Runtime `ON table` verification，最终 `completed / verified`。2D candidate generation 已从 4 个独立 GPU Job 收敛为一个 Sidecar batch Job / 一个 `SanaSprintWorker`，warm 4 图实测 9.075s。2D/3D Adapter 继续通过 Sidecar `/v1/models` 做 lazy capability preflight；未知 model/profile 在 GPU submit 前 fail-closed。Cancellation Ownership 已贯穿 Agent Run → high-level Tool → `source_3d_asset` → 2D/VLM/3D Adapter → Sidecar DELETE。Agent step 支持原子 checkpoint，跨进程 Tool resume 已通过 crash/restart 实验并以稳定 `executionId` rebind Sidecar Job。在没有独立 State Owner、failure lifecycle、deployment 或真实性能压力前，不抽独立 `build_world` service。
 
 旗舰 Gate：
 

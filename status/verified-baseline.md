@@ -211,7 +211,8 @@ SHA-256 = descriptor SHA-256
 2026-08-28，独立 `AgentScape-agent` 已完成从文本到真实 Runtime World 的 one-shot Vertical Slice：
 
 ```text
-AgentScape-agent  43874d4  feat: rank image candidates before one-shot world generation
+AgentScape-agent  f8400a3  feat: generate image candidates through provider batches
+AgentScape-agent  638a553  feat: resume interrupted tools across processes
 ```
 
 代码形态继续遵循 Single-file First：
@@ -226,7 +227,7 @@ src/runs.js               仅拥有独立 checkpoint / failure-recovery 生命�
 最终本地 Gate：
 
 ```text
-node:test                         34/34 PASS
+node:test                         35/35 PASS
 node --check                      PASS
 source_3d_asset replay            5/5 PASS
 Agent trajectory replay           5/5 PASS
@@ -271,7 +272,8 @@ elapsed                           99.901 s
 candidateCount                    4
 2D model                          sana-sprint-1.6b
 2D seeds                          42 / 73 / 104 / 135
-2D jobs                           4/4 succeeded
+2D batch jobs                     1/1 succeeded
+2D artifacts                      4/4 verified
 VLM                               stepfun-ai/step-3.7-flash
 VLM selected seed                 42
 3D model                          fastsam3d-plus-plus
@@ -288,9 +290,9 @@ Runtime object                     present
 
 `provisional` 不是失败：当前 GLB 超过既有 render-vertex budget，因此 Asset 保持 provisional，World 继承该 admission；但空间关系与 Runtime 支撑真值均已验证，one-shot 只有在 `world.verified=true` 时才返回 `completed`。
 
-另外真实修正了 2D Sidecar job identity 语义：`modal-2D-client.job_id` 是唯一 Job ID，不是跨 Run 幂等 request key。`createModal2DAdapter()` 现在为每次 `generateImages()` 创建独立 run scope；同一 Run 内候选保持可追踪，不同 Run 不再复用历史中断 Job。该修复与 `AbortSignal → Sidecar DELETE → remote cancellation` 的取消传播能力同时通过 34/34 tests。
+2D candidate 路径已进一步收敛为一个 Provider batch Job：同一 prompt 的 `seeds=[42,73,104,135]` 只创建一个 `modal-2D-client` Job / 一个 Modal `FunctionCall` / 一个 `SanaSprintWorker`，Provider 返回 `artifacts[]`。同一个 `executionId` 跨进程恢复时 rebind 同一个 batch Job，不重复创建 GPU execution。`AbortSignal → Sidecar DELETE → remote cancellation` 与 batch rebind 同时通过 35/35 tests。
 
-当前仍未完成、必须继续明确标记的内容只有：**跨进程 Tool resume / 自动恢复**。不为了 roadmap checkbox 额外抽 `build_world` service；当前 `run_text_to_world.js` 已形成深而窄的 one-shot composition，尚无独立 State Owner、failure lifecycle、deployment 或性能压力支持进一步 Extract。
+跨进程 Tool resume / 自动恢复已经通过“两进程 crash → load checkpoint → same executionId → recovered Tool → completed”的真实实验。控制面恢复开销为几十毫秒量级；不为了 roadmap checkbox 额外抽 `build_world` service，当前 `run_text_to_world.js` 继续保持深而窄的 one-shot composition。
 
 
 # 11. AgentScape Asset / World Modular Boundary — 2026-08-28
@@ -643,3 +645,71 @@ Asset experiment               PASS
 World experiment               PASS
 src/generation production files 0
 ```
+
+
+## 2D Candidate Batch Performance — 2026-08-28
+
+已完成 `modal-2D` / `modal-2D-client` / `AgentScape-agent` 的 candidate batch 迁移：
+
+```text
+modal-2D         1299287  feat: batch image candidates on one warm worker
+modal-2D-client  6ca829c  feat: mirror provider candidate batches as one job
+AgentScape-agent f8400a3  feat: generate image candidates through provider batches
+AgentScape       ab527f9  perf: batch modal image candidates on one worker
+```
+
+最终 Gate：
+
+```text
+modal-2D pytest                  20/20 PASS
+modal-2D ruff                    PASS
+modal-2D-client pytest           41/41 PASS
+modal-2D-client ruff             PASS
+AgentScape-agent node:test       35/35 PASS
+Agent source replay               5/5 PASS
+Agent trajectory replay           5/5 PASS
+real modal-2D deploy             PASS
+real cold→warm batch             PASS
+```
+
+最终结构：
+
+```text
+prompt + seeds[42,73,104,135]
+            │
+            ▼
+ONE modal-2D-client Job
+            │
+            ▼
+ONE submit_batch FunctionCall
+            │
+            ▼
+ONE SanaSprintWorker / L40S
+  ├─ seed 42
+  ├─ seed 73
+  ├─ seed 104
+  └─ seed 135
+            │
+            ▼
+4 verified PNG artifacts
+```
+
+连续 cold → warm 实测：
+
+```text
+pre-batch 4 independent jobs     ~54.2 s
+cold one-batch job                43.362 s
+warm one-batch job                 9.075 s
+warm Provider batch compute        6.782 s
+```
+
+Warm worker 内单图 inference：
+
+```text
+seed 42     1.352 s
+seed 73     1.353 s
+seed 104    1.240 s
+seed 135    2.428 s
+```
+
+Warm 返回 `worker_reused=true / worker_load_ms=null`；cold 独立记录 `worker_load_ms=16.909s`。Provider `scaledown_window=300s`，generation hot path 不再执行同步 `prefetch.remote()`；`prefetch` 保留为显式模型准备 capability。

@@ -44,7 +44,7 @@ AgentScape/src/adapters/EmbodiedGenAdapter.js
 |---|---|---|---|
 | `modal-2D-client → modal-2D` | durable mirror + Volume-first Artifact fetch | 保持 | **MIGRATED 2026-08-27** |
 | `modal-gen-client → modal-2D-client` | Connector adapter 已存在 | optional security transport only | **KEEP + SHRINK** |
-| `AgentScape-agent → modal-2D-client` | 不存在 | prompt → candidate image jobs | **ADD** |
+| `AgentScape-agent → modal-2D-client` | one batch Job → N verified candidate artifacts | 保持深 Tool Adapter；跨进程 rebind 同 batch Job | **MIGRATED 2026-08-28** |
 | `modal-inference-hub → modal-2D-client` | 不存在稳定调用 | human image candidate generation | **ADD** |
 
 真实 Gate：`040-modal-2d-provider`。
