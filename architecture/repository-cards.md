@@ -102,9 +102,9 @@ Authoring Compatibility Shell
   owns ProviderRegistry / Connector / GenerationOrchestrator
   owns legacy AssetGenerationPort / generated-manifest admission path
 
-AssetLibrary
-  read-only facade over AssetCatalog
-  no generation/provider surface
+AssetCatalog
+  single Asset read API
+  owns list/search/get/resolveExisting surface
 ```
 
 已完成：
@@ -113,8 +113,8 @@ AssetLibrary
 WorldRuntime → ConnectorClient            REMOVED
 WorldRuntime → GenerationOrchestrator     REMOVED
 WorldRuntime → Provider/Compiler authoring REMOVED
-AssetLibrary → ProviderRegistry           REMOVED
-AssetLibrary → generation compatibility   REMOVED
+AssetLibrary                             REMOVED
+AssetCatalog                              SINGLE READ API
 GenerationOrchestrator → AssetCompiler     REMOVED
 World execution → query/generate/provider REMOVED
 ```

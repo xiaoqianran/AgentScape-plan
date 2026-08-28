@@ -130,11 +130,11 @@ Text
 | C2 Asset Repository/state owner | **DONE (module boundary)** | `0a41a93`：AssetManager/Store/Catalog 归 Asset Module；唯一生产构造点为 `createAssetModule()` |
 | C3 move Agent/Skills out | **IN PROGRESS elsewhere** | Agent 独立仓已建立；本迁移线不改 Agent |
 | C4 caller-driven `publish_asset(Artifact)` | **DONE** | `9369e12`：`assetModule.publishAsset()` 为稳定入口；真实 modal-lab GLB experiment 通过 |
-| C5 AssetLibrary → read-only facade | **DONE** | `a0b522a`：generation/provider surface 全部移出；legacy generation 仅在 `LegacyAuthoringShell` |
+| C5 single Asset read API | **DONE** | `a0b522a` + `86a2232`：AssetLibrary 已删除；AssetCatalog 为唯一 read/search/get/resolveExisting API |
 | C6 remove WorldRuntime → Connector/Generation | **DONE** | `bc3be81`；architecture test fail-closed |
 | C7 retire GenerationOrchestrator | **TODO** | 当前仅在 LegacyAuthoringShell |
 | C8 ProviderRegistry leaves Asset/World domain | **DONE for domain core** | `7bafc7c`；仅 authoring shell 持有 |
-| C9 preserve World Compiler/Runtime behavior | **PASS** | 748/748 root tests + independent Asset/World experiments |
+| C9 preserve World Compiler/Runtime behavior | **PASS** | 746/746 root tests + independent Asset/World experiments；测试数下降来自删除冗余 facade 测试 |
 
 已验证结构：
 

@@ -15,7 +15,7 @@ A1 expose stable Asset API
 A2 establish Asset Repository
 A3 move Agent/Skills out to AgentScape-agent
 A4 caller-driven publish_asset(Artifact)
-A5 AssetLibrary → search/get/store only
+A5 remove AssetLibrary; AssetCatalog is the single read API
 A6 remove WorldRuntime → Connector/Generation
 A7 retire GenerationOrchestrator
 A8 ProviderRegistry leaves domain path
