@@ -162,7 +162,7 @@ modal-build：Build Plane → immutable runtime artifact → Runtime Plane。
 
 `modal-gen-client` 收缩成 pairing/origin/scope/credential isolation/mechanical forwarding。
 
-`AgentScape-client` 收缩成 AgentScape Domain SDK/CLI。
+`AgentScape/sdk/python` 作为 monorepo 内第一方 AgentScape Domain SDK/CLI package；独立 `AgentScape-client` repository 已退役。
 
 # R9 — Legacy Deletion
 

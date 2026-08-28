@@ -253,15 +253,15 @@ agentscape_agent/
 
 ---
 
-# CARD 03 — AgentScape-client
+# PACKAGE CARD — AgentScape/sdk/python
 
-**定位：AgentScape Domain Reference SDK / CLI。**
+**定位：AgentScape monorepo 内的第一方 Domain Reference SDK / CLI package。**
 
 ```text
                     Developer / CI / Agent Adapter
                               │
                               ▼
-┌────────────────── AgentScape-client ─────────────────┐
+┌──────────── AgentScape/sdk/python package ───────────┐
 │                                                     │
 │ [1] Public SDK / CLI                                │
 │                                                     │
@@ -284,7 +284,7 @@ agentscape_agent/
        AgentScape
 ```
 
-**Owns**：AgentScape 公开 domain contract 的调用体验、CLI、reference examples、contract validation。
+**Owns**：AgentScape 公开 domain contract 的调用体验、CLI、reference examples、contract validation。源码 ownership 属于 `AgentScape` monorepo，不再是独立 repository。
 
 **Does Not Own**
 
@@ -293,13 +293,13 @@ agentscape_agent/
 - Asset/World canonical state。
 - global generation orchestration。
 
-**重要修正**：本仓不再做“所有 Provider 的万能 Client”。Provider 已经有 `modal-2D-client` / `modal-3D-client` 等独立 Reference Sidecar。
+**重要修正**：该 package 不再做“所有 Provider 的万能 Client”。Provider 已经有 `modal-2D-client` / `modal-3D-client` 等独立 Reference Sidecar；distribution 名 `agentscape-client` 仅作为兼容 package identity 保留。
 
 **状态**：无业务持久状态；允许 CLI 临时 cache/session。
 
 **目标代码形态**：`client.py / assets.py / worlds.py / runtime.py / cli.py`，不要提前制造 Manager/Repository/Factory。
 
-**Verdict：KEEP + SHRINK TO AGENTSCAPE DOMAIN CLIENT。**
+**Verdict：MERGED INTO AGENTSCAPE MONOREPO。`sdk/python` 是唯一源码真相源；独立 `AgentScape-client` repository 已删除。**
 
 ---
 
@@ -996,9 +996,8 @@ code change
 
 | Repository | Target | 重写程度 |
 |---|---|---:|
-| `AgentScape` | Asset + World Domain Core | 高：移出 Agent/Generation |
+| `AgentScape` | Asset + World Domain Core + `sdk/python` first-party SDK/CLI package | 高：移出 Agent/Generation；吸收重复 SDK repo |
 | `AgentScape-agent` | Agentic Orchestration Caller | **新建** |
-| `AgentScape-client` | AgentScape Domain SDK/CLI | 中：收缩 |
 | `modal-inference-hub` | Human Workflow Caller | 高：从旧 3D Client 提纯 |
 | `modal-gen-client` | Optional Local Security Gateway | 高度收缩 |
 | `modal-2D-client` | Image Provider Reference Sidecar | 已基本稳定 |

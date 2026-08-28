@@ -70,7 +70,7 @@ World        决定“它在哪里、和谁有什么关系、如何交互”
                └─────────────────────────┘
 ```
 
-`AgentScape-client` 是 AgentScape Core 的 Reference SDK/CLI；测试程序也可以直接调用任意公开边界。`modal-gen-client` 只在 Browser/WebView 需要本机特权隔离时作为可选 Security Gateway，不是业务编排层。
+`AgentScape/sdk/python` 是 AgentScape monorepo 内的第一方 Reference SDK/CLI package；测试程序也可以直接调用任意公开边界。独立 `AgentScape-client` repository 已退役。`modal-gen-client` 只在 Browser/WebView 需要本机特权隔离时作为可选 Security Gateway，不是业务编排层。
 
 ## 3. 旗舰 Agent 路径
 
@@ -205,9 +205,8 @@ Asset 不保存某一次 World Placement；位置/关系属于 World Instance。
 
 | Repository | 稳定角色 | 是否业务真值 Owner |
 |---|---|---|
-| `AgentScape` | Asset + World Domain Core | Asset / World |
+| `AgentScape` | Asset + World Domain Core + in-repo `sdk/python` SDK/CLI package | Asset / World |
 | `AgentScape-agent` | Agentic Orchestration Caller | Agent Run / Skill state |
-| `AgentScape-client` | AgentScape Reference SDK/CLI | 否 |
 | `modal-inference-hub` | Human Workflow Caller | Project / human workflow |
 | `modal-gen-client` | Optional Local Security Gateway | security session only |
 | `modal-2D-client` | Image Provider Reference Sidecar | local execution mirror/cache |

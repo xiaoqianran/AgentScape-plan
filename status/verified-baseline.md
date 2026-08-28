@@ -21,6 +21,8 @@ AgentScape-plan before rewrite     689cba4
 
 这些 commit 是本次架构计划重建时的 workspace 事实，不代表所有仓库都已经完成目标架构。
 
+> **2026-08-28 repository convergence:** `AgentScape-client@3a4a2d2` 的完整 18-commit 历史已并入 `AgentScape/sdk/python`，独立 GitHub repository 已删除。上面的 pinned head 仅保留为迁移前历史事实。
+
 # 2. Real Apple E2E
 
 已真实验证：

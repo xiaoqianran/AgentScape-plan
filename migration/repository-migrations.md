@@ -50,12 +50,15 @@ source_3d_asset
 
 Gate：Text → 3D → Asset → World placement 自动闭环。
 
-# 3. AgentScape-client
+# 3. AgentScape/sdk/python
 
-1. 移除万能 Provider Client 定位。
+`AgentScape-client` 独立 repository 已于 2026-08-28 合并回 AgentScape monorepo；完整 Git 历史保留在 AgentScape history 中。
+
+1. `sdk/python` 是第一方 Python SDK/CLI package 的唯一源码真相源。
 2. 只暴露 Asset/World/Runtime domain contract。
 3. 保留 CLI/reference examples/contract validation。
 4. 无业务 DB。
+5. package distribution 名继续使用 `agentscape-client` 以保持兼容；源码 ownership 不再独立。
 
 # 4. modal-inference-hub
 
