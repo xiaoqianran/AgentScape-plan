@@ -100,12 +100,12 @@ Human semantic selection 留 Hub；model-required automatic rembg 下沉 `modal-
 
 ```text
 A1 Agent Run / tool loop + checkpoint    DONE (resume gated)
-A2 AgentScape / 2D / 3D / VLM adapters  PARTIAL (2D+3D real verified)
-A3 source_3d_asset Skill                 STARTED
-A4 build_world Skill                     TODO
+A2 AgentScape / 2D / 3D / VLM adapters  DONE (real one-shot verified)
+A3 source_3d_asset Skill                 DONE
+A4 build_world                           DONE inside one-shot slice; no extraction pressure
 ```
 
-当前实现遵循 Experiment-oriented Modular Monolith：生产代码保持 `agent.js + source_3d_asset.js + runs.js` 三个高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出。`source_3d_asset` 使用 Functional Core / Imperative Shell；真实 2D Sidecar adapter 与真实 3D Sidecar adapter 均已验证。3D 路径已通过原始 2D PNG → `modal-3D-client` → Provider InputConditioner/BiRefNet → FastSAM3D++ → verified GLB。2D/3D Adapter 现在都会在首次 Job 前通过 Sidecar `/v1/models` 做 lazy capability preflight，并缓存本次 Adapter capability；未知 model/profile 会在 GPU Job submit 前 fail-closed。Cancellation Ownership 也已贯穿 Agent Run → high-level Tool → `source_3d_asset` → 2D/VLM/3D Adapter → Sidecar DELETE；真实 2D/3D Job 均验证最终 `cancelled / remote.cancelled / retryable=false`。VLM adapter 仍只有 contract test，因当前 VPS 没有真实 LLM 凭据而未冒充通过；AgentScape Asset adapter 也仍待接入。Agent step 已支持原子 checkpoint；自动 resume 暂不启用，必须等待 Asset Tool 具备稳定 request identity/idempotency。
+当前实现继续遵循 Experiment-oriented Modular Monolith：生产代码保持少量高内聚文件，不建立 service/repository/manager/factory 横向层。`runs.js` 只有因为 Agent Run 具备独立持久化/故障恢复生命周期才被抽出；`source_3d_asset.js` 保持 Text → candidates → VLM selection → 3D → Asset 的单文件 Vertical Slice；`run_text_to_world.js` 只组合 source Asset 与 World/Runtime verification。真实旗舰链已经完成 4 × SANA-Sprint 1.6B → `stepfun-ai/step-3.7-flash` Vision ranking → FastSAM3D++ → verified GLB → ArtifactRegistry → AssetCompiler → WorldPipeline → Runtime `ON table` verification，最终 `completed / verified`。2D/3D Adapter 继续通过 Sidecar `/v1/models` 做 lazy capability preflight；未知 model/profile 在 GPU submit 前 fail-closed。Cancellation Ownership 也已贯穿 Agent Run → high-level Tool → `source_3d_asset` → 2D/VLM/3D Adapter → Sidecar DELETE。2D Job identity 已修正为 per-run scope，避免跨 Run 复用历史中断 Job。Agent step 已支持原子 checkpoint；**当前唯一 gated 项是跨进程 Tool resume / 自动恢复**。在没有独立 State Owner、failure lifecycle、deployment 或真实性能压力前，不抽独立 `build_world` service。
 
 旗舰 Gate：
 

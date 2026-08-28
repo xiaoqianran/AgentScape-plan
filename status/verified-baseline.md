@@ -206,69 +206,91 @@ SHA-256 = descriptor SHA-256
 这些结果是后续 `modal-3D InputConditioner` public-contract 迁移的 baseline；迁移后必须重跑同一实验矩阵并保持 parity。
 
 
-# 10. AgentScape-agent Initial Vertical Slice
+# 10. AgentScape-agent Verified One-shot Vertical Slice
 
-2026-08-27 已建立独立 `AgentScape-agent` 仓库并完成第一版 Experiment-oriented Modular Monolith：
-
-```text
-AgentScape-agent  f4add25  docs: record verified cancellation propagation
-```
-
-代码形态：
+2026-08-28，独立 `AgentScape-agent` 已完成从文本到真实 Runtime World 的 one-shot Vertical Slice：
 
 ```text
-src/agent.js            high-level Agent tool loop
-src/source_3d_asset.js  single-file Vertical Slice
+AgentScape-agent  43874d4  feat: rank image candidates before one-shot world generation
 ```
 
-验证：
+代码形态继续遵循 Single-file First：
+
+```text
+src/agent.js              high-level Agent tool loop
+src/source_3d_asset.js    Text → candidates → VLM select → 3D → Asset Vertical Slice
+src/run_text_to_world.js  source_3d_asset → World → Runtime verify one-shot composition
+src/runs.js               仅拥有独立 checkpoint / failure-recovery 生命周期
+```
+
+最终本地 Gate：
 
 ```text
 node:test                         34/34 PASS
 node --check                      PASS
-real modal-2D-client health       PASS
-real modal-2D candidate run       4/4 PASS
-model                             sana-sprint-1.6b
-seeds                             42 / 73 / 104 / 135
-elapsed                           63672 ms
-candidate SHA-256                 4 distinct digests
-VLM ranking                       SKIPPED (credentials unavailable)
-
 source_3d_asset replay            5/5 PASS
-checkpoint atomic JSON            PASS
-checkpoint mode                   0600
-checkpoint failure                fail-closed
-binary Tool observation           rejected before persistence
-real modal-3D-client adapter      PASS
-3D model                           fastsam3d-plus-plus
-3D jobId                           agent3d_193038dd45916f91ea1b4437
-3D artifactId                      art_adf3b2520c19532daad5197a984e2
-3D artifact bytes                  7,525,252
-3D GLB SHA-256                     543694494b4482d053d1eaae47e84cdb08f9170287ad319f6be66d40fa0fb667
-3D conditioning                    birefnet / birefnet-general-lite
-3D foreground ratio                0.2843132019042969
-3D source SHA-256                  MATCH
-3D elapsed                         220643 ms
-real sidecar capability preflight PASS
-2D capability                      sana-sprint-1.6b / available
-3D capability                      fastsam3d-plus-plus / recommended / enabled
-unknown model/profile              fail-closed before Job submit
-capability fetch                   lazy + cached per adapter
+Agent trajectory replay           5/5 PASS
+git diff --check                  PASS
+tracked secret scan               PASS (no credential in tracked files)
 ```
 
-已验证的边界：
+真实多候选旗舰链：
 
 ```text
-Agent
-  → high-level tool only
-  → source_3d_asset
-      → deterministic pure state transitions
-      → side effects in imperative shell
-      → real modal-2D sidecar adapter
-      → OpenAI-compatible VLM contract adapter
+Text
+  ↓
+4 × modal-2D-client / SANA-Sprint 1.6B
+  ↓
+OpenAI-compatible Vision Ranker
+  ↓
+stepfun-ai/step-3.7-flash
+  ↓
+selected candidate
+  ↓
+modal-3D-client / FastSAM3D++
+  ↓
+verified GLB
+  ↓
+AgentScape ArtifactRegistry + SHA-256 verify
+  ↓
+AssetCompiler / Asset admission
+  ↓
+canonical WorldPipeline
+  ↓
+ON table placement
+  ↓
+WorldRuntime support verification
 ```
 
-未验证的内容必须继续标记为未完成：真实 VLM ranking、跨进程 Tool resume。Asset publication 已由 `9369e12` 独立验证；World placement 已由 provider-free World experiment 独立验证。
+最终 rebase 后真实复验：
+
+```text
+status                            completed
+stage                             verified
+elapsed                           99.901 s
+candidateCount                    4
+2D model                          sana-sprint-1.6b
+2D seeds                          42 / 73 / 104 / 135
+2D jobs                           4/4 succeeded
+VLM                               stepfun-ai/step-3.7-flash
+VLM selected seed                 42
+3D model                          fastsam3d-plus-plus
+3D artifact bytes                 7,853,800
+3D GLB SHA-256                    120a9658ffad6a6c3d7232b9a717ce9737279334d87ce04b245c8e5085b0422e
+Asset admission                   provisional
+Asset reason                      BUDGET_RENDER_VERTICES
+World admission                   provisional
+World reason                      ASSET_PROVISIONAL
+relation admission                ready
+object ON table                    verified
+Runtime object                     present
+```
+
+`provisional` 不是失败：当前 GLB 超过既有 render-vertex budget，因此 Asset 保持 provisional，World 继承该 admission；但空间关系与 Runtime 支撑真值均已验证，one-shot 只有在 `world.verified=true` 时才返回 `completed`。
+
+另外真实修正了 2D Sidecar job identity 语义：`modal-2D-client.job_id` 是唯一 Job ID，不是跨 Run 幂等 request key。`createModal2DAdapter()` 现在为每次 `generateImages()` 创建独立 run scope；同一 Run 内候选保持可追踪，不同 Run 不再复用历史中断 Job。该修复与 `AbortSignal → Sidecar DELETE → remote cancellation` 的取消传播能力同时通过 34/34 tests。
+
+当前仍未完成、必须继续明确标记的内容只有：**跨进程 Tool resume / 自动恢复**。不为了 roadmap checkbox 额外抽 `build_world` service；当前 `run_text_to_world.js` 已形成深而窄的 one-shot composition，尚无独立 State Owner、failure lifecycle、deployment 或性能压力支持进一步 Extract。
 
 
 # 11. AgentScape Asset / World Modular Boundary — 2026-08-28
