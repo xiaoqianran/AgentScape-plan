@@ -99,7 +99,7 @@ World Core
   World execution entities carry AssetRef only
 
 Authoring Compatibility Shell (`src/authoring/`)
-  owns ProviderRegistry / Connector / GenerationOrchestrator
+  owns ProviderRegistry / Connector / GenerationOrchestrator / GenerationJobCenter
   owns legacy AssetGenerationPort / generated-manifest admission path
 
 AssetCatalog

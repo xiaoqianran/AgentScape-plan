@@ -307,6 +307,7 @@ bc3be81  refactor: move authoring out of world runtime
 a0b522a  refactor: retire asset library generation compatibility
 86a2232  refactor: remove redundant asset library facade
 ef2830d  refactor: move generation orchestration into authoring
+4dab4f7  refactor: move generation job center into authoring
 ```
 
 当前结构证据：
@@ -583,10 +584,11 @@ src/authoring/GenerationOrchestrator.js
 ```text
 src/authoring/
   ├─ LegacyAuthoringShell
-  └─ GenerationOrchestrator
+  ├─ GenerationOrchestrator
+  └─ GenerationJobCenter
 
 src/generation/
-  └─ GenerationJobCenter
+  └─ <no production modules>
 ```
 
 验证：
@@ -602,3 +604,42 @@ stale old orchestrator path   0
 ```
 
 说明：这完成的是 **GenerationOrchestrator 从 Asset/World Core 移出**，不是 legacy authoring 功能的最终删除；后者等待外部 Caller/Agent parity 后再 retire。
+
+
+## 11.5 Generation Job Center Leaves Core — 2026-08-28
+
+`4dab4f7 refactor: move generation job center into authoring` 完成 generation UI/control-plane ownership 的物理收口：
+
+```text
+BEFORE
+src/generation/GenerationJobCenter.js
+
+AFTER
+src/authoring/GenerationJobCenter.js
+```
+
+最终目录：
+
+```text
+src/authoring/
+  ├─ LegacyAuthoringShell.js
+  ├─ GenerationOrchestrator.js
+  └─ GenerationJobCenter.js
+
+src/generation/
+  └─ no production modules
+```
+
+Architecture validator 现在 fail-closed：`src/generation/` 下重新出现生产 `.js` 文件会失败。
+
+验证：
+
+```text
+GenerationJobCenter targeted   8/8 PASS
+AgentScape root tests          746/746 PASS
+production build               PASS
+architecture validation        PASS
+Asset experiment               PASS
+World experiment               PASS
+src/generation production files 0
+```

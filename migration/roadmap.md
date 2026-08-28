@@ -132,7 +132,7 @@ Text
 | C4 caller-driven `publish_asset(Artifact)` | **DONE** | `9369e12`：`assetModule.publishAsset()` 为稳定入口；真实 modal-lab GLB experiment 通过 |
 | C5 single Asset read API | **DONE** | `a0b522a` + `86a2232`：AssetLibrary 已删除；AssetCatalog 为唯一 read/search/get/resolveExisting API |
 | C6 remove WorldRuntime → Connector/Generation | **DONE** | `bc3be81`；architecture test fail-closed |
-| C7 GenerationOrchestrator leaves Core | **DONE / legacy retirement TODO** | `ef2830d`：Orchestrator 已移至 `src/authoring/`；彻底删除等待外部 Caller parity |
+| C7 generation authoring leaves Core | **DONE / legacy retirement TODO** | `ef2830d` + `4dab4f7`：Orchestrator 与 Job Center 均移至 `src/authoring/`，`src/generation/` 无生产模块；彻底删除等待外部 Caller parity |
 | C8 ProviderRegistry leaves Asset/World domain | **DONE for domain core** | `7bafc7c`；仅 authoring shell 持有 |
 | C9 preserve World Compiler/Runtime behavior | **PASS** | 746/746 root tests + independent Asset/World experiments；测试数下降来自删除冗余 facade 测试 |
 

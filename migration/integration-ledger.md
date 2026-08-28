@@ -24,6 +24,7 @@
 ```text
 AgentScape/src/runtime/WorldRuntime.js
 AgentScape/src/authoring/GenerationOrchestrator.js
+AgentScape/src/authoring/GenerationJobCenter.js
 AgentScape/src/providers/ProviderRegistry.js
 AgentScape/src/adapters/EmbodiedGenAdapter.js
 ```
