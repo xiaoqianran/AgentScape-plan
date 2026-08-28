@@ -715,3 +715,106 @@ seed 135    2.428 s
 ```
 
 Warm 返回 `worker_reused=true / worker_load_ms=null`；cold 独立记录 `worker_load_ms=16.909s`。Provider `scaledown_window=300s`，generation hot path 不再执行同步 `prefetch.remote()`；`prefetch` 保留为显式模型准备 capability。
+
+# 12. modal-3D Provider Input Conditioning — 2026-08-28
+
+`modal-3D@487b661 feat: condition source images inside modal 3d` 已将
+InputConditioner 下沉到 Provider，公开输入契约不再强制 canonical RGBA。
+
+**这是 CODE DONE，不是 verified。** 记录于此是为了防止回退，不是为了宣称
+`041` parity 已达成。
+
+## 已验证（代码层 Gate）
+
+```text
+modal-3D unittest discover -s tests     87/87 PASS   （与 CI 一致）
+modal-3D pytest tests/                  87/87 PASS
+modal-3D python -m compileall           PASS
+```
+
+CI 使用 `unittest discover -s tests`（见 `.github/workflows/ci.yml`），不是 pytest。
+
+## 公开契约变更
+
+```text
+BEFORE（041 baseline）
+public input = canonical 1024×1024 RGBA，alpha_required
+Caller 负责 rembg / crop / canonicalize
+
+AFTER
+public input = image/png | image/jpeg | image/webp
+               maxBytes 20 MiB
+               alpha optional
+               conditioning = provider
+               pathPrefix = source-inputs/
+Provider 负责 decode → alpha 判定 → 必要时 rembg → letterbox → canonical
+```
+
+## Conditioning 策略
+
+```text
+已有 meaningful alpha
+  → strategy = preserve-alpha
+  → 原 alpha 直接保留
+
+opaque source
+  → RemBgWorker 预测 mask
+  → refine_mask（binary_fill_holes + binary_closing，BiRefNet tail）
+  → strategy = birefnet
+  → 记录 engine / mask_elapsed_ms
+
+两条分支后统一
+  → foreground bbox → letterbox → canonical 1024×1024 RGBA
+```
+
+## 041 Parity 保护机制（关键，禁止回退）
+
+```text
+client-inputs/<sha>.png
+  → _legacy_canonical() pass-through
+  → 字节原样保留
+  → source_sha256 == canonical_sha256
+  → strategy = legacy-canonical-pass-through
+  → 041 四模型矩阵行为与迁移前完全一致
+
+source-inputs/<sha>.<ext>
+  → condition_image() 新路径
+```
+
+`rembg_gateway.condition()` 的分支判定在 `rembg_gateway.py:214`；
+注释已明确写出保留 legacy 字节是为了让 `041` 继续作为 strict parity gate。
+删除这条 pass-through 前必须先取得 conditioning parity 证据。
+
+## Worker 契约未变
+
+```text
+capabilities.py:71
+  raise ValueError("worker input contract must be canonical 1024x1024 RGBA PNG")
+```
+
+Conditioning 发生在 Gateway/Provider 边界内，四个 Worker
+（FastSAM3D++ / Hermite-TRELLIS2++ / Hunyuan2.1++ / Pixal3D）
+仍只认 canonical，不感知 conditioning 存在。
+
+## 尚未验证 — 重跑 041 前不得标记 verified
+
+```text
+[ ] source-inputs/ 路径四模型矩阵
+[ ] conditioning 后 GLB digest 与 legacy canonical 路径一致或差异已解释
+[ ] strategy 分布（preserve-alpha vs birefnet）真实采样
+[ ] GLB magic / version / declared bytes / SHA 全匹配
+```
+
+## 已知非阻塞问题
+
+```text
+archive/sam3_1/test_sam3_materialize.py
+  导入已删除的 modal_3d.sam3_1
+  pytest 全仓收集即失败（1 error）
+  487b661 之前已存在，不属于本次 Gate
+  CI 只跑 tests/，不受影响
+
+ruff check modal_3d/ tests/
+  7 errors（未使用变量等）
+  ruff 不在 CI 与 dev dependency group 中，不构成 Gate
+```

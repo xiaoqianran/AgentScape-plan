@@ -83,11 +83,37 @@ modal-inference-hub               AgentScape-agent
 |---|---|---|---|
 | `old Hub generation code → modal-3D` | 直接 Modal execution | Hub → new modal-3D-client | **MOVE** |
 | `old Hub preprocess → canonical RGBA` | Project-level rembg/component/canonical | Human semantic selection 留 Hub；model-required conditioning 下沉 Provider | **SPLIT OWNERSHIP** |
-| `new modal-3D-client → modal-3D` | 新仓已建立；初版要求 canonical RGBA | Sidecar 上传 image + optional mask，不拥有 rembg | **ADD / ADJUST CONTRACT** |
-| `modal-3D Provider API → canonical RGBA` | 当前公开 contract | public image/mask → internal canonical | **MOVE CONDITIONING INTO PROVIDER** |
+| `new modal-3D-client → modal-3D` | **已改**：上传 `source-inputs/` 原图（png/jpeg/webp，≤20MiB，alpha 可选），不拥有 rembg | Sidecar 上传 image + optional mask，不拥有 rembg | **MIGRATED 2026-08-28 (`modal-3D@487b661`)** |
+| `modal-3D Provider API → canonical RGBA` | **已改**：public 接受 image/* + optional alpha；canonical 降为 worker 内部契约 | public image/mask → internal canonical | **MIGRATED 2026-08-28，PARITY GATE PENDING** |
 | `modal-gen-client → old 3D client` | 现有 adapter 指向旧应用 | 指向 new modal-3D-client | **MOVE** |
 
 真实 Gate：`041-modal-3d-provider`，先记录当前 canonical baseline，再迁 InputConditioner。
+
+**迁移现状（2026-08-28）。** Conditioning 已下沉 Provider：
+
+```text
+Caller / Sidecar
+  upload 原图 → source-inputs/
+                    │
+                    ▼
+        rembg_gateway.condition()
+          ├─ meaningful alpha → preserve-alpha
+          └─ opaque → RemBgWorker → refine_mask → birefnet
+                    │
+                    ▼
+        canonical 1024×1024 RGBA
+                    │
+                    ▼
+              3D Worker（只认 canonical）
+```
+
+`client-inputs/` 走 `_legacy_canonical()` pass-through，字节原样保留，
+因此 `041` 仍可作为 strict parity gate 重跑。
+
+**状态：`CODE DONE / PARITY GATE PENDING`。** 代码层已 87/87 PASS，
+但 `041` 四模型矩阵尚未用 `source-inputs/` 路径重跑，
+因此 `modal-3D` conditioning 路径**尚未标记 verified**。
+Parity 清单见 [`migration/roadmap.md` R3B](../migration/roadmap.md)。
 
 ## 5. Candidate Selection
 

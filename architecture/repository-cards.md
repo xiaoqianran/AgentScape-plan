@@ -603,9 +603,11 @@ bytes/digest/producer verify
 - rembg 模型或 model-required crop/normalize logic。
 - Agent planning / Asset semantics。
 
-**重要目标修正**
+**目标修正：已实现（2026-08-28）**
 
-当前新仓初版仍只接受 `1024×1024 RGBA canonical PNG`。这是过窄的过渡 contract，目标要改成：
+历史约束（已解除）：新仓初版只接受 `1024×1024 RGBA canonical PNG`，是过窄的过渡 contract。
+
+目标 contract：
 
 ```text
 supported image bytes
@@ -617,7 +619,22 @@ upload unchanged
 modal-3D InputConditioner
 ```
 
-Sidecar 可以做安全/格式验证，但不能要求所有 Caller 理解 TRELLIS/Hunyuan/SAM3D 的内部 canonical quirks。
+**Sidecar 侧已完成。** `modal-3D-client` 现在上传原图，不再要求 Caller 预处理：
+
+```text
+SOURCE_ROLE          source_image
+SOURCE_MEDIA_TYPES   image/png, image/jpeg, image/webp
+SOURCE_MAX_BYTES     20 MiB
+SOURCE_PATH_PREFIX   source-inputs/     ← 触发 Provider conditioning
+```
+
+Sidecar 只做安全/格式/体积验证 + 内容寻址存储，不理解也不要求
+TRELLIS/Hunyuan/SAM3D 的内部 canonical quirks。Conditioning evidence
+由 `jobs.py` 的 `_CONDITIONING_EVIDENCE_FIELDS` 投影到 Job：
+`strategy / engine / source_sha256 / canonical_sha256 / source_size /
+foreground_bbox / foreground_ratio / canonical_size / bytes / mask_elapsed_ms`。
+
+Sidecar 不拥有 rembg，也不做 crop/normalize——这些归 `modal-3D` InputConditioner。
 
 **Durable Submit**
 
@@ -702,7 +719,52 @@ INTERNAL worker contract:
 model-required canonical image/mask
 ```
 
-当前部署仍公开要求 `1024×1024 RGBA alpha_required`；`041` 实验将它记录为迁移前 baseline。随后 InputConditioner 下沉到 Provider 后再放宽 public contract。
+**已实现（2026-08-28，`modal-3D@487b661`）。** InputConditioner 已下沉到 Provider，
+公开契约不再强制 Caller 自己产出 canonical 输入：
+
+```text
+PUBLIC（capabilities.py PUBLIC_IMAGE_INPUT）
+  mediaTypes   image/png, image/jpeg, image/webp
+  maxBytes     20 MiB
+  alpha        optional
+  conditioning provider
+  pathPrefix   source-inputs/
+
+INTERNAL worker contract（未变）
+  canonical 1024×1024 RGBA PNG
+  capabilities.py:71 仍强制校验
+```
+
+Conditioning 链路：
+
+```text
+source-inputs/ 上传原图（Caller 不预处理）
+        │
+        ▼
+rembg_gateway.condition()
+        │
+        ├─ 检测到 meaningful alpha → strategy=preserve-alpha，保留原 alpha
+        │
+        └─ opaque source → RemBgWorker 预测 mask
+                → refine_mask（BiRefNet tail，与 041 同一策略）
+                → strategy=birefnet
+        │
+        ▼
+letterbox → canonical 1024×1024 RGBA
+        │
+        ▼
+Worker（只认 canonical，不感知 conditioning）
+```
+
+**双前缀过渡，保护 041 parity。** `client-inputs/` 下已验证的 canonical 输入走
+`_legacy_canonical()` pass-through，字节原样保留（`source_sha256 == canonical_sha256`，
+`strategy=legacy-canonical-pass-through`）；`source-inputs/` 走新 conditioning。
+两条路径并存，老路径行为不变，因此 `041` 仍是严格 parity gate。
+
+**状态区分。** 代码已 DONE；`verified` 尚未成立——`041` 四模型矩阵尚未用
+`source-inputs/` 路径重跑。Conditioning 引入了新的 `refine_mask`/letterbox 实现，
+87 个本地单测只证明纯函数正确性，不证明真实 GPU 输出 parity。
+详见 [`migration/roadmap.md` R3B](../migration/roadmap.md) 的 PARITY GATE 清单。
 
 **041 实验 Gate**
 
@@ -712,7 +774,14 @@ model-required canonical image/mask
 - 每个模型产生真实 GLB。
 - GLB magic/version/declared bytes/SHA 全匹配。
 
-**Verdict：KEEP MULTI-MODEL STRUCTURE；ADD INPUT CONDITIONER，DON'T CENTRALIZE WORKERS。**
+**已通过 Gate（代码层）**
+
+```text
+modal-3D unittest discover -s tests     87/87 PASS
+modal-3D compileall                     PASS
+```
+
+**Verdict：KEEP MULTI-MODEL STRUCTURE；INPUT CONDITIONER 已下沉 PROVIDER，DON'T CENTRALIZE WORKERS。**
 
 ---
 

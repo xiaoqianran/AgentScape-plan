@@ -60,9 +60,11 @@ Gate：Hub full tests + new 3D Client tests + Connector/root integration tests�
 
 ## R3B — modal-3D / modal-3D-client
 
+**状态：CODE DONE / PARITY GATE PENDING。**
+
 先固定：capability/model identity、Provider Artifact identity、Sidecar durable projection、GLB verification。
 
-随后迁 InputConditioner：
+### InputConditioner 迁移
 
 ```text
 CURRENT public:
@@ -76,7 +78,77 @@ Provider InputConditioner
 internal model canonical
 ```
 
-迁移后必须重跑 `041` 四模型矩阵。
+**代码已落地（2026-08-28）。** `modal-3D@487b661 feat: condition source images inside modal 3d`
+已在 Provider 内部实现输入 Conditioning：
+
+```text
+modal_3d/conditioning.py       condition_image(data, predicted_mask=None)
+                               ├─ 已有 meaningful alpha → preserve-alpha
+                               └─ opaque source → RemBgWorker 预测 mask
+                                  → refine_mask（BiRefNet tail，与 041 同一策略）
+                                  → letterbox 到 canonical 1024 RGBA
+
+modal_3d/capabilities.py       PUBLIC_IMAGE_INPUT
+                               ├─ mediaTypes  image/png, image/jpeg, image/webp
+                               ├─ maxBytes    20 MiB
+                               ├─ alpha       optional
+                               ├─ conditioning  provider
+                               └─ pathPrefix  source-inputs/
+
+modal_3d/rembg_gateway.py      condition() 远程入口
+                               └─ client-inputs/ 走 legacy pass-through
+                                  source-inputs/ 走 condition_image()
+
+modal_3d/gateway.py            source-inputs/ → conditioned_generation
+                               client-inputs/ → spawn_generation（原路径）
+```
+
+**双前缀过渡设计。** 关键点是 `041` parity 被显式保护：
+`client-inputs/` 下已验证的 canonical 输入走 `_legacy_canonical()`
+pass-through，字节原样保留（`source_sha256 == canonical_sha256`）；
+只有 `source-inputs/` 走新的 `condition_image()`。因此**新路径可用，老路径不变**，
+`041` 至今仍是严格的 parity gate。
+
+**Worker 内部契约未变。** `capabilities.py:71` 仍强制
+`worker input contract must be canonical 1024x1024 RGBA PNG`。
+Conditioning 发生在 Gateway/Provider 边界内，Worker 不感知。
+这正是 CARD 09 要求的 `PUBLIC: image/* + optional mask/alpha` /
+`INTERNAL: model-required canonical image/mask` 分离。
+
+**Sidecar 已跟上。** `modal-3D-client` 侧 `SOURCE_PATH_PREFIX = "source-inputs/"`、
+`SOURCE_MEDIA_TYPES = (png, jpeg, webp)`、`SOURCE_MAX_BYTES = 20 MiB`，
+`jobs.py` 的 `_CONDITIONING_EVIDENCE_FIELDS` 已包含
+`strategy / engine / source_sha256 / canonical_sha256 / mask_elapsed_ms` 等
+conditioning evidence 字段。
+
+### 已完成 Gate
+
+```text
+modal-3D unittest discover -s tests     87/87 PASS   （与 CI 一致）
+modal-3D python -m compileall           PASS
+```
+
+注：CI (`.github/workflows/ci.yml`) 使用 `unittest discover -s tests`，
+不是 pytest；`pytest tests/` 同样 87 PASS。仓库 `archive/sam3_1/` 下的
+`test_sam3_materialize.py` 导入已删除的 `modal_3d.sam3_1` 模块，
+collect 即失败——这是 487b661 之前就存在的 archive 残留，不属于本次 Gate。
+
+### 仍待完成 — PARITY GATE
+
+**R3B 不能宣布 DONE，直到重跑 `041` 四模型矩阵并保持 parity。**
+
+```text
+[ ] 用 source-inputs/ 路径重跑 041 四模型矩阵
+      FastSAM3D++ / Hermite-TRELLIS2++ / Hunyuan2.1++ / Pixal3D
+[ ] 证明 conditioning 后的 GLB 与 legacy canonical 路径 digest 一致或差异已解释
+[ ] 确认 records 中 conditioning.strategy 分布（preserve-alpha vs birefnet）
+[ ] 四模型 GLB magic/version/declared bytes/SHA 全匹配
+[ ] parity 通过后，才可将 public contract 从 canonical-only 放宽并标记 verified
+```
+
+理由：`condition_image()` 引入了新的 `refine_mask` / letterbox 实现。
+本地 87 个单测证明的是**纯函数正确性**，不是**真实 GPU 四模型输出 parity**。
+在 parity 证据出现前，文档只能写 `CODE DONE`，不能写 `verified`。
 
 # R4 — Human Caller Purification
 
