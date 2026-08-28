@@ -86,7 +86,9 @@ World references Asset
 
 ```text
 Asset Module
+  owns ArtifactRegistry / ArtifactByteStore
   owns AssetManager / CompiledAssetStore / AssetCatalog
+  exposes publishAsset({ artifactId, assetId, label })
   creates state only through createAssetModule()
         │
         │ AssetRef { assetId }
@@ -108,13 +110,13 @@ WorldRuntime → ConnectorClient            REMOVED
 WorldRuntime → GenerationOrchestrator     REMOVED
 WorldRuntime → Provider/Compiler authoring REMOVED
 AssetLibrary → ProviderRegistry           REMOVED
+GenerationOrchestrator → AssetCompiler     REMOVED
 World execution → query/generate/provider REMOVED
 ```
 
 仍待迁移：
 
 ```text
-Caller publish_asset(Artifact) public API stabilization
 AssetLibrary generation compatibility retirement
 GenerationOrchestrator retirement
 legacy WorldIR authoring request fields retirement after caller parity

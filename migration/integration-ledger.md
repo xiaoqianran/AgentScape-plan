@@ -35,7 +35,7 @@ AgentScape/src/adapters/EmbodiedGenAdapter.js
 | `WorldRuntime → GenerationOrchestrator` | Runtime 与 generation lifecycle 耦合 | generation 移到 Caller (`AgentScape-agent`/Hub) | **REMOVE** |
 | `AssetLibrary → GenerationOrchestrator` | Repository 同时 search + generate | Asset Repository 只 search/get/store | **REMOVE** |
 | `GenerationOrchestrator → ProviderRegistry` | discovery/execute/composition 混合 | Agent/Hub Tool Adapter 调 Sidecar | **RETIRE** |
-| `GenerationOrchestrator → AssetCompiler` | provider execution 和 domain compile 混合 | Caller 显式 `publish_asset(Artifact)` | **MOVE** |
+| `GenerationOrchestrator → AssetCompiler` | provider execution 和 domain compile 混合 | `assetModule.publishAsset(Artifact)` | **MIGRATED 2026-08-28 (`9369e12`)** |
 | `AgentScape internal Agent → provider jobs` | Agent sees low-level execution surface | 独立 Agent 选择 Skill；Skill 隐藏 poll/download | **MOVE** |
 
 ## 3. modal-2D Path
@@ -105,7 +105,7 @@ modal-inference-hub               AgentScape-agent
 | Arrow | Current | Target | Verdict |
 |---|---|---|---|
 | Provider output → `GenerationOrchestrator` import | 自动 generation path | Caller gets verified Artifact | **REMOVE LEGACY** |
-| Caller → AgentScape Asset API | 不统一 | `publish_asset(Artifact)` 稳定入口 | **ADD** |
+| Caller → AgentScape Asset API | `assetModule.publishAsset({ artifactId, assetId, label })` | stable Artifact → Asset entrance | **MIGRATED 2026-08-28 (`9369e12`)** |
 | Asset → World | 已存在 compiler/pipeline | World references reusable Asset ID | **KEEP + PURIFY** |
 | WorldRuntime → Provider | 仍有 legacy coupling | 永久禁止 | **REMOVE** |
 

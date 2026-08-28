@@ -53,11 +53,16 @@ source_3d_asset Skill
    Artifact verification
         │
         ▼
-   publish_asset
+   assetModule.publishAsset({ artifactId, assetId, label })
+        │
+        ├─ verified Artifact gate / lease / idempotency
+        ├─ Asset Compiler
+        ├─ Admission
+        └─ AssetRef
         │
         ▼
      AgentScape
-   Asset Compiler
+   Asset Repository
         │
         ▼
   Asset Repository

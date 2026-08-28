@@ -268,7 +268,7 @@ Agent
       → OpenAI-compatible VLM contract adapter
 ```
 
-未验证的内容必须继续标记为未完成：真实 VLM ranking、Asset publication、World placement、跨进程 Tool resume。
+未验证的内容必须继续标记为未完成：真实 VLM ranking、跨进程 Tool resume。Asset publication 已由 `9369e12` 独立验证；World placement 已由 provider-free World experiment 独立验证。
 
 
 # 11. AgentScape Asset / World Modular Boundary — 2026-08-28
@@ -281,6 +281,7 @@ bc3be81  refactor: move authoring out of world runtime
 7bafc7c  refactor: move provider generation behind asset port
 9fb7fec  refactor: isolate world execution behind asset refs
 0a41a93  refactor: move asset state ownership into asset module
+9369e12  feat: stabilize asset publication api
 ```
 
 当前结构证据：
@@ -310,7 +311,7 @@ World Compilation v2
 ```text
 Asset tests                    107/107 PASS
 World tests                    165/165 PASS
-AgentScape root tests          742/742 PASS
+AgentScape root tests          747/747 PASS
 production build               PASS
 repository architecture        PASS (11 pinned submodules)
 domain architecture            PASS
@@ -340,3 +341,51 @@ query/generate/provider leak   none
 ```
 
 结论：独立测试能力已经在同一 Repository 内成立；当前没有证据要求立即物理拆分 `AgentScape-Asset` / `AgentScape-World`。继续按 Extract by Pressure 观察 state lifecycle、release cadence、dependency/failure isolation 与 change coupling。
+
+
+## 11.1 Stable Asset Publication API — 2026-08-28
+
+`9369e12 feat: stabilize asset publication api` 完成 Caller → Asset 的稳定发布接缝：
+
+```text
+Verified Artifact
+      │
+      ▼
+assetModule.publishAsset({ artifactId, assetId, label })
+      │
+      ├─ integrity / availability gate
+      ├─ lease + idempotency
+      ├─ AssetCompiler
+      ├─ Asset admission
+      ├─ Asset registration
+      └─ AssetRef { assetId }
+```
+
+Ownership：
+
+```text
+createAssetModule()
+  ├─ ArtifactRegistry
+  ├─ ArtifactByteStore
+  ├─ CompiledAssetStore
+  ├─ AssetManager
+  ├─ AssetCatalog
+  └─ publishAsset()
+```
+
+`GenerationOrchestrator` 不再拥有/构造 `AssetManager`、`AssetCompiler`、publication pipeline、Artifact Registry 或 Artifact ByteStore；它仅 import Provider Artifact 并调用注入的 `publishAsset()`。
+
+验证：
+
+```text
+AgentScape root tests          747/747 PASS
+production build               PASS
+repository/domain architecture PASS
+asset validation               PASS
+real modal-lab SF3D GLB        803,592 bytes
+public publishAsset experiment PASS
+returned AssetRef              PASS
+idempotent reuse               PASS
+provenance conflict fail-close PASS
+compiler rejection no-register PASS
+```
