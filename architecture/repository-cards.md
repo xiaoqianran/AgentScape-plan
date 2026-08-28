@@ -98,7 +98,7 @@ World Core
   WorldRuntime imports no Asset implementation
   World execution entities carry AssetRef only
 
-Authoring Compatibility Shell
+Authoring Compatibility Shell (`src/authoring/`)
   owns ProviderRegistry / Connector / GenerationOrchestrator
   owns legacy AssetGenerationPort / generated-manifest admission path
 

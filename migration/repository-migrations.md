@@ -17,7 +17,7 @@ A3 move Agent/Skills out to AgentScape-agent
 A4 caller-driven publish_asset(Artifact)
 A5 remove AssetLibrary; AssetCatalog is the single read API
 A6 remove WorldRuntime → Connector/Generation
-A7 retire GenerationOrchestrator
+A7 move GenerationOrchestrator out of Core; retire after external Caller parity
 A8 ProviderRegistry leaves domain path
 A9 preserve World Compiler/Runtime
 ```

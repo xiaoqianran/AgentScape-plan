@@ -306,6 +306,7 @@ bc3be81  refactor: move authoring out of world runtime
 9369e12  feat: stabilize asset publication api
 a0b522a  refactor: retire asset library generation compatibility
 86a2232  refactor: remove redundant asset library facade
+ef2830d  refactor: move generation orchestration into authoring
 ```
 
 当前结构证据：
@@ -563,3 +564,41 @@ retryable   false
 ```
 
 3D Sidecar 额外修复了 async HTTP event-loop 被同步 Modal submit 阻塞的问题：`POST /v1/jobs` 现在把同步 submit 放入 FastAPI threadpool，因此同一 Sidecar 在提交期间仍能处理 GET/DELETE cancellation request。Sidecar 在 remote call 尚未绑定时保留 `cancel_requested`，remote id 返回后重新读取最新 durable state，并在需要时立即取消刚绑定的 remote call，避免后台 GPU Job 泄漏。
+
+
+## 11.4 Generation Orchestration Leaves Core — 2026-08-28
+
+`ef2830d refactor: move generation orchestration into authoring` 将 generation orchestration 的物理 ownership 从 Core 路径迁出：
+
+```text
+BEFORE
+src/generation/GenerationOrchestrator.js
+
+AFTER
+src/authoring/GenerationOrchestrator.js
+```
+
+当前职责：
+
+```text
+src/authoring/
+  ├─ LegacyAuthoringShell
+  └─ GenerationOrchestrator
+
+src/generation/
+  └─ GenerationJobCenter
+```
+
+验证：
+
+```text
+targeted orchestrator tests   12/12 PASS
+AgentScape root tests         746/746 PASS
+production build              PASS
+architecture validation       PASS
+Asset experiment              PASS
+World experiment              PASS
+stale old orchestrator path   0
+```
+
+说明：这完成的是 **GenerationOrchestrator 从 Asset/World Core 移出**，不是 legacy authoring 功能的最终删除；后者等待外部 Caller/Agent parity 后再 retire。
