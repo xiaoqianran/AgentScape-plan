@@ -1,3 +1,5 @@
+
+> Replaceable Physics/Navigation backend ownership、native leakage 与 parity/conformance 规则详见 [`runtime-backend-plane.md`](./runtime-backend-plane.md) 与 ADR-0010。
 # Runtime Views
 
 ## 1. Agent generation path

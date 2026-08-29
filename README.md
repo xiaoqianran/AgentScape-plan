@@ -38,14 +38,16 @@
 2. [`architecture/repository-cards.md`](architecture/repository-cards.md) — 三个当前仓库及 `modal-provider` 内部 package card。
 3. [`architecture/shared-contracts.md`](architecture/shared-contracts.md) — Capability、Execution、Artifact、Finding、Asset、World 契约。
 4. [`architecture/runtime-views.md`](architecture/runtime-views.md) — 关键运行链路与失败所有权。
-5. [`migration/integration-ledger.md`](migration/integration-ledger.md) — 旧拓扑到新拓扑的收敛账本。
-6. [`migration/repository-migrations.md`](migration/repository-migrations.md) — 仓库合并/退役映射。
-7. [`migration/roadmap.md`](migration/roadmap.md) — 后续清理 Gate。
-8. [`status/verified-baseline.md`](status/verified-baseline.md) — 当前已验证基线。
-9. [`adr/0006-modal-provider-consolidation.md`](adr/0006-modal-provider-consolidation.md) — 本轮仓库收敛决策。
-10. [`adr/0007-domain-root-repository-layout.md`](adr/0007-domain-root-repository-layout.md) — AgentScape domain-root 目录与依赖门禁。
-11. [`adr/0008-agentscape-convergence.md`](adr/0008-agentscape-convergence.md) — 单一 GenerationRuntime、Connector-only Provider discovery、SDK/Skill/CI 收敛。
-12. [`adr/0009-observatory-developer-surface.md`](adr/0009-observatory-developer-surface.md) — Observatory Developer Surface、单向依赖与 Runtime debug contract。
+5. [`architecture/runtime-backend-plane.md`](architecture/runtime-backend-plane.md) — Physics/Navigation deep backend contract、solver ownership 与 evidence quality。
+6. [`migration/integration-ledger.md`](migration/integration-ledger.md) — 旧拓扑到新拓扑的收敛账本。
+7. [`migration/repository-migrations.md`](migration/repository-migrations.md) — 仓库合并/退役映射。
+8. [`migration/roadmap.md`](migration/roadmap.md) — 后续清理 Gate。
+9. [`status/verified-baseline.md`](status/verified-baseline.md) — 当前已验证基线。
+10. [`adr/0006-modal-provider-consolidation.md`](adr/0006-modal-provider-consolidation.md) — 本轮仓库收敛决策。
+11. [`adr/0007-domain-root-repository-layout.md`](adr/0007-domain-root-repository-layout.md) — AgentScape domain-root 目录与依赖门禁。
+12. [`adr/0008-agentscape-convergence.md`](adr/0008-agentscape-convergence.md) — 单一 GenerationRuntime、Connector-only Provider discovery、SDK/Skill/CI 收敛。
+13. [`adr/0009-observatory-developer-surface.md`](adr/0009-observatory-developer-surface.md) — Observatory Developer Surface、单向依赖与 Runtime debug contract。
+14. [`adr/0010-replaceable-runtime-backends.md`](adr/0010-replaceable-runtime-backends.md) — Physics/Navigation replaceable backend ownership、native leakage 与 conformance/parity Gate。
 
 ## 不变量
 
