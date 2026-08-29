@@ -1,42 +1,71 @@
 # Shared Contracts
 
-本文件只定义跨仓库需要稳定的最小语义。禁止设计覆盖所有 Provider 私有参数的万能 schema。
+本文件只定义跨仓库/跨 runtime boundary 需要稳定的最小语义。禁止为了“统一”而复制所有 Provider 私有参数。
 
-# 1. CapabilityDescriptor
+# 1. Capability Snapshot
 
-用途：回答“谁能完成哪一种 Action”。
+AgentScape 通过 Connector snapshot 发现远程能力，而不是在源码中硬编码 Provider topology。
 
 ```text
-CapabilityDescriptor
-├─ kind              # image.generate / asset3d.generate / ...
-├─ provider
-├─ operation         # provider-specific operation id
-├─ inputSchema
-├─ outputs[]
-│   ├─ role
-│   └─ mediaType
-├─ executionMode     # sync / async
-├─ cancellable
-└─ readiness
+CapabilitySnapshot
+├─ connector
+│  ├─ id
+│  ├─ instance
+│  └─ version
+├─ revision
+├─ hash
+└─ providers[]
+   ├─ id
+   ├─ status / health
+   ├─ artifactTransport
+   └─ capabilities[]
+      ├─ operation
+      ├─ category
+      ├─ input
+      ├─ output
+      ├─ execution
+      └─ support
 ```
 
 规则：
 
-- `kind` 使用消费者领域语言。
-- `operation` 可以是 Provider 私有 ID。
-- Catalog 只做 register/list/find/resolve，不执行 workflow。
-- Provider 私有 model/profile/options 保持 Provider namespace。
+- remote Provider id 只来自当前 snapshot；
+- ProviderRegistry 不预置远程 placeholder；
+- Connector-owned Provider 随 snapshot 生命周期进入/退出 registry；
+- local/test provider 可以显式注册，但 Connector 不得抢占 ownership；
+- snapshot 是消费者 projection，不是 Provider 内部 truth 的完整复制。
 
-# 2. ExecutionProjection
-
-用途：消费者观察一次外部执行，不宣称拥有 Provider 内部真值。
+# 2. Capability Descriptor
 
 ```text
-ExecutionProjection
-├─ requestId
+CapabilityDescriptor
 ├─ provider
-├─ providerExecutionId
-├─ state              # queued/running/succeeded/failed/cancelled/uncertain
+├─ operation
+├─ category
+├─ status
+├─ input
+├─ output
+├─ execution
+├─ support
+└─ artifactTransport
+```
+
+规则：
+
+- `operation` 必须是稳定 provider-scoped id；
+- capability selection 只消费稳定字段；
+- Provider 私有 model/profile/options 仍在 Provider namespace 内；
+- Catalog/Registry 做 register/list/find/resolve，不拥有 Provider execution。
+
+# 3. Job / Execution Projection
+
+```text
+GenerationJobProjection
+├─ requestId
+├─ jobId
+├─ provider
+├─ operation
+├─ state
 ├─ createdAt
 ├─ updatedAt
 ├─ failure?
@@ -45,58 +74,34 @@ ExecutionProjection
 
 规则：
 
-- Provider 可以有更丰富内部状态；跨边界只投影稳定子集。
-- `uncertain` 是合法状态；submit 超时不能自动等同 `failed`。
-- request identity 必须支持幂等绑定。
-- 不要求全局统一 Job ID。
+- Provider 可以有更丰富内部状态；AgentScape 只保存稳定投影；
+- submit timeout 不能自动等价于 failed；
+- request identity 必须支持幂等绑定；
+- Job projection 不是 Provider-private Job database。
 
-# 3. ArtifactDescriptor
+# 4. Artifact Descriptor
 
 ```text
 ArtifactDescriptor
 ├─ id
 ├─ role
 ├─ mediaType
-├─ bytes
-├─ digest             # 推荐 sha256:<hex>
+├─ bytes?
+├─ digest
 ├─ producer
-│   ├─ provider
-│   ├─ operation
-│   └─ revision?
-└─ lineage[]          # input artifact/request/execution refs
+│  ├─ provider
+│  ├─ operation
+│  └─ revision?
+└─ lineage[]
 ```
 
 规则：
 
-- Content identity 与 location 分离。
-- digest 标识的 Artifact 内容不可原地覆盖。
-- 派生处理产生新的 Artifact，不修改 source Artifact 的事实身份。
-- 跨仓优先传 Descriptor + bytes/location，不传私有 ORM/Job object。
-
-# 4. Finding
-
-```text
-Finding
-├─ code
-├─ severity           # info/advisory/error
-├─ subject
-├─ message
-└─ evidence
-```
-
-Evidence 层级必须保留，禁止向上冒充：
-
-```text
-provider_raw_evidence
-   ↓
-semantic_selected_evidence
-   ↓
-simulation_validated_evidence
-   ↓
-agentscape_runtime_verified_evidence
-```
-
-例如 raw grasp、semantic selected grasp、SAPIEN validated grasp、AgentScape/Rapier verified grasp 必须是不同 evidence level。
+- Content identity 与 location 分离；
+- digest 对应内容不可原地覆盖；
+- 派生处理产生新 Artifact；
+- private Volume path / Modal call id 不成为 AgentScape contract；
+- Artifact 进入 Asset publication 前必须经过本地 integrity/content gate。
 
 # 5. Asset
 
@@ -110,7 +115,8 @@ Asset
 ├─ physics
 ├─ colliders
 ├─ surfaces
-├─ quality/admission
+├─ receptacles?
+├─ quality / admission
 └─ sourceArtifactLineage
 ```
 
@@ -124,67 +130,137 @@ rejected
 
 Provider 不得直接声明 AgentScape Asset 已验证。
 
-## 5.1 AssetRef — Asset → World 的最小公共契约
+## 5.1 AssetRef
 
-World 不接收 Provider payload，也不依赖完整 Asset manifest 作为身份接口。编译后的 World execution 只通过：
+World execution identity 只通过：
 
 ```text
 AssetRef
 └─ assetId
 ```
 
-规则：
+`query / prompt / generate / provider` 属于 Caller/WorldIR asset request，不是 live World entity identity。
 
-- `AssetRef` 表示稳定 reusable Asset identity，不表示 World instance。
-- `query / prompt / generate / provider` 属于 Caller/Authoring request，不得进入 World execution entity。
-- World compilation 可以暂时保留独立 `assetRequests` 兼容输入，但 execution `entities` 只能携带 `assetRef`。
-- Asset state 由 Asset Module 创建和拥有；WorldRuntime 通过 composition root 注入后消费。
+当前实现锚点：
 
-当前实现锚点：`asset/AssetRef.js`、`generation/orchestration/createAssetModule.js`，`agentscape.world-compilation` 已升级为 v2 以显式表达该结构变化。
+```text
+asset/AssetRef.js
+generation/orchestration/createAssetModule.js
+generation/orchestration/GenerationRuntime.js
+```
 
 # 6. World
 
 ```text
-World IR       = desired intent
+WorldIR        = desired intent + request policy
 Compiled World = admitted desired state
 Observed World = live Runtime state
-Finding        = desired ↔ observed difference/evidence
+Finding        = desired ↔ observed evidence
+Acceptance     = current task/world criteria result
 ```
 
-Provider 不生产“已验证 World”。Provider 最多生产 Artifact / Evidence。
+Provider 不生产“已验证 World”。Provider 最多生产 Artifact / Provider evidence。
 
-# 7. Request Identity / Idempotency
+Canonical placement relation 包括：
 
-所有可能跨进程/网络边界的异步执行必须支持稳定 request identity。
+```text
+ON
+NEAR
+INSIDE + receptacleId
+```
+
+这些 relation 必须由 Runtime 执行并重新观察，不能把 Planner declaration 当 truth。
+
+`asset.generate` 是 WorldIR 中的 request-policy boolean；它与已经退役的 `/api/capabilities/asset-generate` 没有关系。
+
+# 7. Finding / Evidence
+
+```text
+Finding
+├─ code
+├─ severity
+├─ subject
+├─ message
+└─ evidence
+```
+
+Evidence level 必须保留：
+
+```text
+provider_raw_evidence
+   ↓
+semantic_selected_evidence
+   ↓
+simulation_validated_evidence
+   ↓
+agentscape_runtime_verified_evidence
+```
+
+低层 evidence 不能向上冒充 Runtime verification。
+
+# 8. Request Identity / Idempotency
+
+所有可能跨进程/网络边界的异步执行必须支持稳定 request identity：
 
 ```text
 requestId
-   │
    ├─ local intent
    ├─ provider execution binding
    └─ retry/recovery lookup
 ```
 
-规则：
+重复 submit 不能无条件创建第二个昂贵远程 execution；不确定状态必须显式投影。
 
-- 同一 request identity 的重复 submit 不能无条件创建第二个昂贵远程执行。
-- 出现“远程可能创建成功、本地未绑定”的情况时进入 `uncertain`，不得自动重复计费。
-- Sidecar/Gateway 可以保存投影，但 Provider execution identity 仍由 Provider 拥有。
+# 9. Python SDK Contract
 
-# 8. Contract Versioning
-
-- 只对跨仓稳定 Contract 版本化。
-- Provider 私有字段放 Provider namespace，自主演化。
-- 新版本优先 additive。
-- 破坏性改动必须新 major/versioned operation。
-- 内部 helper/function 不定义协议版本。
-
-# 9. Validation Gates
+Python SDK 只公开 Connector consumer contract：
 
 ```text
-Provider output
+ConnectorSession
+Capability client
+Job client / runner
+Artifact transport
+normalized request builder / pipeline
+```
+
+不再把 Provider-specific client 当稳定 SDK API：
+
+```text
+KaggleImageProvider          retired
+Modal2DProvider              retired
+Modal3DProvider              retired
+direct TextTo3DPipeline      retired
+```
+
+# 10. Agent Tool Contract
+
+Tool JSON schema、description 与 SkillRegistry definition 是 Agent 参数/结果 contract 的权威。
+
+Prompt policy 只保存跨工具执行不变量，例如：
+
+- mutation 后 fresh replan；
+- recovery evidence scope；
+- world admission 不得绕过；
+- embodied action 使用 Runtime high-level tool。
+
+Prompt 不复制 Provider topology 或完整 Tool schema。
+
+# 11. Contract Versioning
+
+- 只对跨边界稳定 contract 版本化；
+- Provider 私有字段自主演化；
+- 新版本优先 additive；
+- 破坏性协议改动必须新 major/versioned operation；
+- 内部 helper/function 不定义协议版本。
+
+# 12. Validation Gates
+
+```text
+Connector snapshot
    ↓
-Artifact structural/content verification
+Job / Artifact projection
+   ↓
+Artifact integrity/content verification
    ↓
 Asset Compiler / Admission
    ↓
@@ -192,7 +268,7 @@ World Compiler / Admission
    ↓
 Runtime execution
    ↓
-Runtime verification
+Runtime Verification / Acceptance
 ```
 
 任何上游 `success` 都不能跳过下游 Gate。

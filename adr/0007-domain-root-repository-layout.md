@@ -38,7 +38,7 @@ public/
 
 - `studio`：Human app/editor/UI/local persistence；
 - `agent`：Agent loop、LLM gateway、tools、skills、recovery；
-- `generation`：Job、Artifact、Connector、Provider-facing orchestration，以及 Artifact→Asset bridge；
+- `generation`：GenerationRuntime、Job、Artifact、Connector、Provider projection，以及 Artifact→Asset bridge；
 - `asset`：Asset truth、manifest、admission、adapter、compiler；
 - `world`：World spec、compiler、runtime、verification、content；
 - `core`：business-neutral primitives only。
@@ -59,4 +59,4 @@ public/
 
 ## Verification
 
-AgentScape 的 `npm run architecture:validate` 对旧根目录回归和关键 domain dependency 做机械门禁；完整迁移必须同时通过 architecture validation、asset validation、全量 tests 与 production build。
+AgentScape 的 `npm run architecture:validate` 对旧根目录回归、关键 domain dependency 与 Convergence invariants 做机械门禁；完整 Gate 同时覆盖 asset validation、world viability、全量 tests、production build、Python SDK 与 Asset Compiler Service。

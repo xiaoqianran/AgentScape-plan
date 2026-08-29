@@ -8,7 +8,7 @@
 
 | Repository | 当前职责 |
 |---|---|
-| `AgentScape` | Agent 编排、LLM/VLM、Skill、Human/UI、Job/Artifact projection、Asset、World、Runtime、Verification、Python SDK |
+| `AgentScape` | Agent/Studio、GenerationRuntime、Connector/Job/Artifact projection、Asset、World、Runtime/Verification、Connector-only Python SDK |
 | `modal-provider` | Modal 本地安全网关、2D/3D Provider、Reference Sidecar、EmbodiedGen build/runtime integration |
 | `AgentScape-plan` | 架构决策、迁移记录、验证基线；不参与运行时 |
 
@@ -44,6 +44,7 @@
 8. [`status/verified-baseline.md`](status/verified-baseline.md) — 当前已验证基线。
 9. [`adr/0006-modal-provider-consolidation.md`](adr/0006-modal-provider-consolidation.md) — 本轮仓库收敛决策。
 10. [`adr/0007-domain-root-repository-layout.md`](adr/0007-domain-root-repository-layout.md) — AgentScape domain-root 目录与依赖门禁。
+11. [`adr/0008-agentscape-convergence.md`](adr/0008-agentscape-convergence.md) — 单一 GenerationRuntime、Connector-only Provider discovery、SDK/Skill/CI 收敛。
 
 ## 不变量
 

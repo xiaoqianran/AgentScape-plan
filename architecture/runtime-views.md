@@ -4,111 +4,178 @@
 
 ```text
 User text
-  → AgentScape ToolCallingAgent / Skill
-  → provider-neutral capability selection
-  → Connector session/job request
-  → modal-provider
-      → optional modal-gen-client
-      → modal-2D-client → modal-2D
-      → modal-3D-client → modal-3D
+  → ToolCallingAgent
+  → domain skill pack
+  → GenerationRuntime
+  → Connector session
+  → capability snapshot / provider projection
+  → Job submit / reconcile
   → Artifact descriptor + bytes
-  → AgentScape Artifact admission
-  → Asset Compiler / Asset admission
-  → World Compiler / WorldRuntime
-  → Verification
+  → Artifact integrity gate
+  → Asset publication
+  → Asset Compiler / admission
+  → WorldIR / WorldRuntime
+  → Verification / Acceptance
 ```
 
 Failure ownership：
 
 ```text
-LLM/VLM decision failure       → AgentScape
-Skill/run recovery             → AgentScape
-Connector projection failure   → AgentScape connector/job layer
-Sidecar restore/cache failure  → modal-provider sidecar
-GPU/model failure              → modal-provider provider
-Artifact integrity failure     → producer + AgentScape admission gate
-Asset/World verification       → AgentScape
+LLM/VLM decision failure        → AgentScape Agent
+Skill/run recovery              → AgentScape Agent
+Connector/session failure       → AgentScape Generation consumer layer
+Provider execution failure      → modal-provider
+Artifact integrity failure      → producer + AgentScape admission
+Asset/World verification        → AgentScape
 ```
 
-## 2. Human workflow path
+AgentScape 不在源码中预先知道远程 Provider id；选择空间来自当前 Connector capability snapshot。
 
-Human 不再通过独立 `modal-inference-hub` 仓库进入系统。
+## 2. Human generation path
 
 ```text
 Human
-  → AgentScape UI / Task / Run / Editor
-  → same provider-neutral capability boundary
-  → modal-provider
-  → Artifact
-  → AgentScape Asset/World pipeline
+  → Studio
+  → studio/ui/generation/GenerationJobCenter
+  → GenerationRuntime
+  → same Connector / Job / Artifact boundary
+  → Asset / World
 ```
 
-Human 与 Agent 共享 capability contract，但各自的交互状态都由 AgentScape 内部对应 domain 管理。
+`GenerationJobCenter` 只是 Human UI，不拥有 Job truth 或 Provider execution。
 
-## 3. 2D → 3D composition
+## 3. Missing Asset in canonical World pipeline
 
 ```text
-AgentScape intent
-  → modal-provider/modal-2D-client
-  → modal-provider/modal-2D
-  → one or N image artifacts
-  → AgentScape/Caller selection
-  → modal-provider/modal-3D-client
-  → modal-provider/modal-3D
-  → GLB artifact
+WorldIR
+  → resolve reusable Asset
+  → missing
+  → generation policy allows retry
+  → GenerationRuntime.resolveAssetRequest
+  → Connector capability / Job / Artifact
+  → Asset publication/admission
+  → retry World compilation once
+  → final world admission
 ```
 
-Provider-private artifact id、Volume path、Modal call id 不跨越 AgentScape admission boundary。
+`asset.generate` 是 WorldIR 的 generation-policy boolean，不是旧 `/api/capabilities/asset-generate` deployment endpoint。
 
-## 4. 3D input conditioning
+## 4. Provider snapshot lifecycle
 
 ```text
-source image
-  → modal-3D-client public input validation
-  → modal-3D conditioning path
-       ├─ trustworthy alpha/mask → preserve
-       └─ opaque input → segmentation/rembg when required
-  → canonical RGBA
-  → selected 3D worker
-  → GLB
+paired Connector session
+  → capability snapshot
+  → normalize
+  → apply to ProviderRegistry
+  → Connector owns projected Provider ids
+
+new snapshot
+  → replace Connector-owned projection
+
+session revoked / snapshot cleared
+  → remove Connector-owned Provider ids
+  → do not restore source-coded placeholders
 ```
 
-Conditioning 是 3D Provider 能力的一部分，不是独立业务仓库。
+显式 local/test provider ownership 不得被 Connector snapshot 覆盖。
 
-## 5. EmbodiedGen path
+## 5. Artifact → Asset
 
 ```text
-AgentScape/provider request
-  → modal-provider/modal-EmbodiedGen runtime
-  → pinned upstream EmbodiedGen source
-  → provider artifact bundle
-  → AgentScape EmbodiedGenAdapter / admission
-  → Asset / World pipeline
+Provider-private result
+  → Connector Artifact projection
+  → descriptor / bytes / digest
+  → local structural/content verification
+  → Artifact Registry / byte store
+  → Asset publication
+  → Asset Compiler
+  → ready / provisional / rejected
 ```
 
-`EmbodiedGen` upstream 不直接成为 AgentScape dependency graph 中的仓库节点。
+Provider success 不等于 Asset ready。
 
-## 6. Local security gateway
-
-`modal-gen-client` 只是 `modal-provider` 内的可选安全组件：
+## 6. Generated World
 
 ```text
-Browser/WebView
-  → modal-gen-client pairing/session/scope
-  → provider sidecar
-  → provider
+Planner
+  → proposeWorldIR
+  → Runtime-issued revision/provenance
+  → runWorldPipeline
+  → asset resolution/generation
+  → deterministic layout
+  → behavior/physics/relation admission
+  → instantiate
+  → validation / repair
+  → acceptance
+  → world-ready | world-provisional | world-rejected
 ```
 
-Native/test caller 可以在满足安全边界时直接调用 sidecar contract；gateway 不是业务 authority。
+`ON / NEAR / INSIDE` 都必须由 Runtime 物理执行/重新验证，Planner declaration 不等于 World truth。
 
-## 7. Removed runtime paths
-
-以下运行链不再属于目标架构：
+## 7. Python SDK
 
 ```text
+Python caller
+  → ConnectorSession
+  → Capability client
+  → Job runner/client
+  → Artifact transport
+  → normalized pipeline/request builder
+```
+
+Python SDK 不再有 direct Kaggle/Modal Provider client，也不再提供 `reconstruct-direct`。
+
+## 8. Agent prompt / skill runtime
+
+```text
+ToolCallingAgent
+  → build prompt from policy modules
+  → attach current structured Tool definitions
+  → LLM call
+  → SkillRegistry dispatch
+  → domain skill pack handler
+  → Runtime mutation/verification
+  → fresh replan after mutation
+```
+
+Tool schema/description 是参数与结果 contract 的权威。Prompt policy 只保存跨工具执行不变量，不能复制一份 Provider/World schema 当作隐形架构。
+
+## 9. 2D → 3D provider composition
+
+Provider 内部仍可组合 2D/3D package：
+
+```text
+Connector-normalized intent
+  → modal-provider 2D execution
+  → image Artifact
+  → modal-provider 3D execution
+  → GLB Artifact
+  → AgentScape admission
+```
+
+Provider-private Artifact id、Volume path、Modal call id 不跨越 AgentScape admission boundary。
+
+## 10. EmbodiedGen
+
+```text
+Connector request
+  → modal-provider/modal-EmbodiedGen
+  → pinned upstream source/runtime
+  → Artifact bundle
+  → AgentScape Artifact/Asset admission
+```
+
+AgentScape 可保留 Asset compatibility adapter 来理解既有上游 payload，但 Provider-specific import tool 不属于默认 Agent capability surface。
+
+## 11. Removed runtime paths
+
+```text
+runtime.authoring
+LegacyAuthoringShell
+AgentScape → direct HTTP asset generator
+AgentScape ProviderRegistry → built-in remote placeholders
+Python SDK → direct Kaggle/Modal Provider
 AgentScape → kaggle-inference-hub
-AgentScape-agent standalone → providers
 modal-inference-hub standalone → providers
 modal-build standalone → EmbodiedGen runtime
-modal-lab → production capability
 ```

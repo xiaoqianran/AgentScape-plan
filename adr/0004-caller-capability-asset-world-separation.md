@@ -1,6 +1,6 @@
 # ADR-0004 — Caller / Capability / Asset / World 分离
 
-> **Repository-topology note (2026-08-29):** Caller/Capability/Asset/World 分层仍有效；`AgentScape-agent` / `modal-inference-hub` 作为独立仓库的决策已由 [ADR-0006](./0006-modal-provider-consolidation.md) supersede，相关能力现归 `AgentScape`。
+> **Supersession note (2026-08-29):** Caller/Capability/Asset/World 分层仍有效；独立 Caller 仓库拓扑由 [ADR-0006](./0006-modal-provider-consolidation.md) supersede；“GenerationOrchestrator 不再是目标组件”这一实现级结论由 [ADR-0008](./0008-agentscape-convergence.md) supersede。当前 GenerationRuntime/GenerationOrchestrator 只承担 AgentScape 内 provider-neutral consumer/orchestration。
 
 
 **Status:** Accepted
@@ -42,7 +42,7 @@ World        → owns placement/relations/runtime
 
 ## Consequences
 
-- `GenerationOrchestrator` 不再是目标架构组件。
+- ~~`GenerationOrchestrator` 不再是目标架构组件。~~ **该实现级结论已由 ADR-0008 supersede；当前 GenerationRuntime/GenerationOrchestrator 仅承担 provider-neutral consumer/orchestration。**
 - WorldRuntime 最终完全不知道 Connector/Provider。
 - Hub 与 Agent 可以共享 Sidecar/Provider contract，但不共享 Project/AgentRun state。
 - `modal-3D-client` public input 最终不应要求 Caller 理解模型私有 canonical 规则。

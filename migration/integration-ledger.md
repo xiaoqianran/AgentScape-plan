@@ -15,6 +15,9 @@
 | `modal-build → EmbodiedGen` | `modal-provider/modal-EmbodiedGen → pinned upstream` | MERGED |
 | `AgentScape workspace → EmbodiedGen submodule/repo` | provider-owned upstream pin/clone | REMOVE REPO BOUNDARY |
 | `modal-lab → migration evidence` | experiments stay with owning repo/package | REMOVE |
+| `LegacyAuthoringShell → direct asset generator` | `GenerationRuntime → Connector capability/Job/Artifact → Asset publication` | REMOVE/REPLACE |
+| `ProviderRegistry → source-coded remote placeholders` | Connector capability snapshot owns remote Provider projection | REMOVE/REPLACE |
+| `Python SDK → Kaggle/direct Modal Provider client` | Python SDK → Unified Connector consumer contract | REMOVE/REPLACE |
 
 ## Current legal repository edges
 
@@ -37,3 +40,7 @@ AgentScape-plan
 - 不得把 `modal-2D*` / `modal-3D*` 再写成顶层仓库依赖。
 - 不得恢复 Kaggle 作为平级生产 Provider，除非先新增 ADR。
 - 不得恢复独立 Human Hub/Agent 仓库，除非出现新的独立 state/security/deployment owner 并通过 ADR。
+
+- 不得恢复 `LegacyAuthoringShell`、`runtime.authoring` 或 direct asset generator。
+- 不得在 AgentScape `ProviderRegistry` 中恢复 source-coded remote Provider defaults。
+- 不得把 Kaggle/direct Modal Provider client 重新加入 Python SDK 默认 public surface。

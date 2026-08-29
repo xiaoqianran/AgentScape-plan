@@ -2,171 +2,175 @@
 
 ## 1. 当前系统使命
 
-AgentScape 现在是一个收敛后的系统，而不是由十几个独立仓库拼起来的产品。
+AgentScape 是一个收敛后的 embodied-agent product/runtime monorepo；远程生成执行由兄弟仓库 `modal-provider` 提供。`AgentScape-plan` 只记录架构，不参与运行时。
 
 ```text
 User / Human / LLM
         │
         ▼
-┌────────────────────────────────────────────┐
-│                 AgentScape                 │
-│                                            │
-│ Agent / LLM / VLM / Skills                │
-│ Human UI / Runs / Tasks / Editor           │
-│ Connector client / Job projection          │
-│ Artifact admission / Asset compiler        │
-│ Asset repository / World compiler          │
-│ WorldRuntime / Physics / Navigation        │
-│ Interaction / Verification                 │
-└──────────────────────┬─────────────────────┘
-                       │ stable provider contract
+┌──────────────────────────────────────────────┐
+│                  AgentScape                  │
+│                                              │
+│ Studio / Agent / Skills / Prompt policies    │
+│ GenerationRuntime                            │
+│ Connector session + capability snapshot      │
+│ Job / Artifact projection                    │
+│ Asset publication / Compiler / Admission     │
+│ WorldIR / Compiler / Runtime / Verification  │
+│ Python SDK (Connector consumer)               │
+└──────────────────────┬───────────────────────┘
+                       │ stable Connector/provider contract
                        ▼
-┌────────────────────────────────────────────┐
-│              modal-provider                │
-│                                            │
-│ modal-gen-client      local security gw    │
-│ modal-2D-client       image sidecar        │
-│ modal-2D              image provider       │
-│ modal-3D-client       3D sidecar           │
-│ modal-3D              3D provider          │
-│ modal-EmbodiedGen     build/runtime integ. │
-└────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│               modal-provider                 │
+│                                              │
+│ modal-gen-client      local security gateway │
+│ modal-2D-client       image sidecar          │
+│ modal-2D              image provider         │
+│ modal-3D-client       3D sidecar             │
+│ modal-3D              3D provider            │
+│ modal-EmbodiedGen     build/runtime integ.   │
+└──────────────────────────────────────────────┘
                        │
                        ▼
-             Modal / external upstreams
+              Modal / external upstreams
 ```
 
-`AgentScape-plan` 只记录架构，不在这条运行链上。
+## 2. AgentScape Ownership
 
-## 2. 仓库级 Ownership
-
-### AgentScape
-
-拥有：
+AgentScape owns:
 
 - Agent Run、Tool Calling、LLM/VLM gateway；
-- Skill 与生成工作流；
-- Human-facing editor/task/run UI；
-- Connector session/client projection；
-- provider-neutral Job/Artifact 语义；
-- Asset admission、Asset Compiler、Asset Repository；
-- World IR/Compiler/Runtime；
-- Physics、Navigation、Interaction、Verification；
-- 第一方 Python SDK。
+- domain skill packs 与可组合 Agent prompt policies；
+- Human-facing Studio / Task / Run / Editor；
+- `GenerationRuntime` provider-neutral generation composition；
+- Connector session、capability snapshot 与 ProviderRegistry projection；
+- Job / Artifact projection、Artifact integrity gate；
+- Artifact → Asset publication；
+- Asset Compiler / Asset admission / reusable Asset truth；
+- WorldIR、World Compiler、WorldRuntime；
+- Physics、Navigation、Interaction、Verification / Acceptance；
+- 第一方 Python SDK；
+- 同仓 `api/`、`services/`、tests、tooling。
 
-不拥有：Modal 模型部署、Provider 私有 Job、Provider 私有 Artifact 位置、GPU 生命周期。
+AgentScape does not own:
 
-### modal-provider
+- remote Provider implementation；
+- Provider-private credential；
+- GPU/model lifecycle；
+- Provider-private Job/Artifact storage；
+- Modal call id / private Volume path。
 
-拥有：
+## 3. Generation control plane
 
-- Provider 私有执行事实；
-- Modal GPU runtime；
-- Reference Sidecar 的本地 Job mirror/cache；
-- 可选本地安全网关；
-- 2D/3D 模型与输入条件处理；
-- EmbodiedGen 相关可复现 build artifact 与部署 runtime；
-- 上游版本 pin、兼容 patch、provider-level smoke/benchmark。
+AgentScape 只有一条正式远程生成主链：
 
-不拥有：Agent 的业务决策、Asset semantic truth、World truth。
+```text
+Studio / Agent / World retry
+        │
+        ▼
+GenerationRuntime
+        │
+        ▼
+Connector session
+        │
+        ▼
+capability snapshot
+        │
+        ▼
+ProviderRegistry projection
+        │
+        ├─ Job submit/reconcile/cancel
+        └─ Artifact descriptor/bytes
+                │
+                ▼
+          Asset publication
+                │
+                ▼
+       Compiler / Asset admission
+```
 
-### AgentScape-plan
+不再存在：
 
-拥有：Architecture Decision、Migration Ledger、Verified Baseline 文档。
+```text
+LegacyAuthoringShell
+runtime.authoring
+direct HTTP asset generator
+/api/capabilities/asset-generate
+source-coded remote Provider placeholders
+```
 
-不拥有任何 runtime state。
+`ProviderRegistry` 默认不认识任何远程 Provider id。远程 Provider 只能由当前 Connector capability snapshot 动态进入 registry；snapshot 清除后对应 Provider 也必须消失。
 
-## 3. `modal-provider` 是 monorepo，不是“旧仓库集合”
+## 4. Caller ownership
 
-当前内部布局：
+Human 与 Agent 都在 AgentScape 内部，但保持不同 caller state：
+
+```text
+Human → Studio UI → GenerationRuntime / World tools
+Agent → Agent skills → GenerationRuntime / World tools
+```
+
+两者共享 provider-neutral capability / Job / Artifact / Asset / World contract，不共享 UI state 或 Agent Run state。
+
+`GenerationJobCenter` 是 Studio UI，归 `studio/ui/generation/`；Generation domain 不拥有 DOM/UI。
+
+## 5. Python SDK
+
+Python SDK 是 Unified Connector consumer，而不是 Provider client collection。
+
+公开目标 surface：
+
+```text
+ConnectorSession
+ConnectorCapabilityClient
+ConnectorJobClient / Runner
+ConnectorArtifactTransport
+ConnectorTextTo3DPipeline
+normalized request builders / contracts
+```
+
+Kaggle/direct Modal Provider client 与 direct pipeline 已从 public surface 删除。
+
+## 6. `modal-provider` monorepo
 
 ```text
 modal-provider/
-├─ modal-gen-client/      optional local security gateway
-├─ modal-2D-client/       image Reference Sidecar
-├─ modal-2D/              image generation provider
-├─ modal-3D-client/       3D Reference Sidecar
-├─ modal-3D/              3D generation provider
-└─ modal-EmbodiedGen/     EmbodiedGen build/runtime integration
+├─ modal-gen-client/
+├─ modal-2D-client/
+├─ modal-2D/
+├─ modal-3D-client/
+├─ modal-3D/
+└─ modal-EmbodiedGen/
 ```
 
-这些目录可以有独立的 Python package、lockfile、测试矩阵、Modal app 和发布节奏；但系统文档必须把它们描述为 `modal-provider` 的内部 package/deployment unit。
+这些是 package/deployment/runtime boundary，不是新的 repository-level architecture authority。
 
-## 4. 旧仓库映射
-
-| 旧边界 | 当前状态 |
-|---|---|
-| `AgentScape-agent` | 已并入 `AgentScape` 的 `agent/`、Skills、Gateway/Run 体系 |
-| `modal-inference-hub` | 独立仓库退役；Human workflow/UI 归 `AgentScape` |
-| `modal-gen-client` | `modal-provider/modal-gen-client` |
-| `modal-2D-client` | `modal-provider/modal-2D-client` |
-| `modal-2D` | `modal-provider/modal-2D` |
-| `modal-3D-client` | `modal-provider/modal-3D-client` |
-| `modal-3D` | `modal-provider/modal-3D` |
-| `kaggle-inference-hub` | 从目标架构移除 |
-| `modal-build` | 能力收敛到 `modal-provider/modal-EmbodiedGen` 及 Provider build/runtime 目录 |
-| `EmbodiedGen` | 外部上游依赖；由 Provider 集成层 pin/clone，不作为 AgentScape 独立仓库 |
-| `modal-lab` | 独立仓库从目标架构移除；实验随 owning package/repo 保存 |
-
-## 5. Flagship 路径
+## 7. State Ownership
 
 ```text
-Text / Human Intent
-        │
-        ▼
-AgentScape Agent or Human UI
-        │
-        ├─ search existing Asset
-        │
-        └─ generate missing content
-                │
-                ▼
-        Connector / provider contract
-                │
-                ▼
-           modal-provider
-        ┌───────┴────────┐
-        │                │
-        ▼                ▼
-   2D generation     3D generation
-        │                │
-        └───────┬────────┘
-                ▼
-        verified Artifact
-                │
-                ▼
-        AgentScape admission
-                │
-                ▼
-         reusable Asset
-                │
-                ▼
-      World Compiler/Runtime
-                │
-                ▼
-           Verification
+Agent Run / mutation identity       → AgentScape
+Human Studio state                 → AgentScape
+Connector session                  → AgentScape consumer projection
+Capability snapshot projection     → AgentScape
+Generation Job projection          → AgentScape
+Provider private execution         → modal-provider
+Provider private artifact storage  → modal-provider
+Admitted Artifact identity         → AgentScape
+Asset semantic truth               → AgentScape
+World desired/compiled/live truth  → AgentScape
+Runtime verification/acceptance    → AgentScape
+Build/runtime compatibility        → modal-provider
+Architecture decisions             → AgentScape-plan
 ```
 
-## 6. State Ownership
+## 8. Global invariants
 
-```text
-Agent Run / Skill checkpoint     → AgentScape
-Human task/project state         → AgentScape
-Connector-facing Job projection  → AgentScape
-Provider private execution       → modal-provider component
-Provider private artifact bytes  → modal-provider component
-Artifact admitted identity       → AgentScape Artifact domain
-Asset semantic truth             → AgentScape
-World desired/compiled/live      → AgentScape
-Build/runtime compatibility      → modal-provider
-Architecture decisions           → AgentScape-plan
-```
-
-## 7. 全局不变量
-
-1. Provider package 可以拆，仓库边界不因此增加。
-2. Provider Artifact 必须通过 AgentScape admission 才能成为 Asset。
-3. Provider 不写 World truth。
-4. Agent/Human caller 不直接依赖 Provider 私有路径、Volume、Modal call id。
-5. `EmbodiedGen` 是 upstream/source dependency，不是 AgentScape runtime authority。
-6. 不再为 Kaggle、旧 Hub、旧 Lab 保留平行架构。
+1. Provider package 可以拆，repository boundary 不因此增加。
+2. AgentScape source code 不硬编码远程 Provider topology。
+3. Provider output 必须先通过 Artifact/Asset admission，不能直接成为 Asset truth。
+4. Provider 不写 World truth。
+5. Generation domain 不依赖 Studio；Studio 可以消费 Generation domain。
+6. World core 不依赖 Generation/Studio/Agent，只消费窄 Asset contract。
+7. `EmbodiedGen` 是 upstream/source dependency，不是 AgentScape runtime authority。
+8. Kaggle、旧 Hub、旧 Lab、LegacyAuthoring/direct generator 不再拥有平行生产主链。

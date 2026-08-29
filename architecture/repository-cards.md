@@ -1,44 +1,103 @@
 # Repository Architecture Cards
 
-本文件描述当前仓库边界。`AgentScape` 内部不再使用总 `src/` 容器；根目录直接表达稳定产品 subsystem。
+本文件描述当前仓库边界。AgentScape 根目录直接表达稳定产品 subsystem；Provider 实现集中在兄弟仓库 `modal-provider`。
 
 # CARD 01 — AgentScape
 
-**Identity**：Agent orchestration + Human Studio + Generation control plane + Asset/World domain core。
+**Identity**：Agent orchestration + Human Studio + provider-neutral Generation control plane + Asset/World domain core。
 
 ```text
 AgentScape
 ├─ studio/        Human app / editor / UI / local persistence
-├─ agent/         Agent / LLM / tools / skills / recovery
-├─ generation/    Job / Artifact / Connector / Provider-facing orchestration
+├─ agent/         Agent loop / gateway / prompt policies / domain skill packs
+├─ generation/    GenerationRuntime / Connector / Job / Artifact / Provider projection
 ├─ asset/         Asset truth / admission / adapters / compiler
 ├─ world/         World spec / compiler / runtime / verification / content
 ├─ core/          business-neutral primitives only
-├─ api/           Vercel Functions deployment boundary
+├─ api/           AgentScape-owned deployment capabilities
 ├─ services/      independently runnable services
 ├─ sdk/           externally consumed SDKs
-├─ tests/         cross-domain integration/regression/e2e
+├─ tests/         domain + contracts + integration + e2e tests
 └─ tooling/       repository validators / scripts / experiments
 ```
 
-**Owns**：Agent Run、Human workflow、provider-neutral Generation projection、admitted Artifact、Asset、World、Runtime truth。
+**Owns**：Agent Run、Human workflow、Generation consumer projection、admitted Artifact、Asset、World、Runtime truth。
 
-**Does not own**：Modal credential/runtime、GPU model lifecycle、Provider-private Job/Artifact storage。
+**Does not own**：remote Provider credential/runtime、GPU lifecycle、Provider-private execution/storage。
 
-## Internal ownership rules
+## Internal ownership
 
 ```text
-studio       → human-facing composition
-agent        → agent-facing composition
-generation   → provider consumer + Artifact→Asset orchestration
-asset        → reusable Asset truth
-world        → World truth/runtime/verification
-core         → no product-domain dependency
+studio
+  → Human composition
+  → owns GenerationJobCenter UI
+
+agent
+  → Agent Run
+  → domain skill packs
+  → composable prompt policies
+
+generation
+  → GenerationRuntime
+  → Connector session / capability snapshot
+  → ProviderRegistry projection
+  → Job / Artifact
+  → Artifact→Asset publication
+
+asset
+  → reusable Asset truth / Compiler / admission
+
+world
+  → desired/compiled/live World truth
+  → Physics / Navigation / Interaction / Verification
+
+core
+  → business-neutral primitive only
 ```
 
-禁止重新引入根级 `src/`、`pipeline/`、`validation/`、`adapters/`、`helpers/`、`utils/` 作为技术型总目录。代码必须跟 owner 走。
+### Generation constraints
 
-`api/`、`services/`、`sdk/` 可以占据根目录，是因为它们分别拥有真实 deployment/release boundary，而不是为了技术分类。
+```text
+Generation → Studio       forbidden
+Provider implementation   forbidden inside AgentScape
+remote Provider defaults  forbidden in ProviderRegistry
+```
+
+正式主链只允许：
+
+```text
+GenerationRuntime
+→ Connector capability snapshot
+→ Job / Artifact
+→ Asset publication
+```
+
+`LegacyAuthoringShell`、direct HTTP asset generator 与 `runtime.authoring` 已退役。
+
+### Agent constraints
+
+`registerCoreSkills.js` 只做 skill-pack composition。Tool handler 按 domain 放入 skill packs；Agent system prompt 由 policy modules 组合，Tool schema/description 是参数与结果 contract 的权威。
+
+### Python SDK constraints
+
+Python SDK 只作为 Connector consumer。`agentscape.providers.*`、Kaggle/direct Modal Provider client 与 direct generation pipeline 不属于当前 public surface。
+
+### Test / CI constraints
+
+Tests 分组为：
+
+```text
+agent/
+asset/
+generation/
+world/
+studio/
+contracts/
+integration/
+e2e/
+```
+
+PR/push 的统一 AgentScape Check 必须同时执行 Runtime、Python SDK、Asset Compiler Service Gate，不使用会漏掉跨模块 contract 破坏的 path filter。
 
 # CARD 02 — modal-provider
 
@@ -60,15 +119,15 @@ modal-provider
 
 ## Package Card — modal-gen-client
 
-可选本机安全网关。拥有 pairing/origin/scope/session 与统一 transport projection；不拥有业务编排。
+可选本机安全网关。拥有 pairing/origin/scope/session 与 transport projection；不拥有 AgentScape business orchestration。
 
 ## Package Card — modal-2D-client
 
-Image Provider Reference Sidecar。拥有本地可恢复 Job mirror、Artifact fetch/verify/cache；不拥有全局 provider routing。
+Image Provider Reference Sidecar。拥有本地可恢复 Job mirror、Artifact fetch/verify/cache。
 
 ## Package Card — modal-2D
 
-Image Generation Provider。拥有模型、GPU 推理和 Provider-private artifact。
+Image Generation Provider。拥有模型、GPU 推理与 Provider-private artifact。
 
 ## Package Card — modal-3D-client
 
@@ -76,11 +135,11 @@ Image Generation Provider。拥有模型、GPU 推理和 Provider-private artifa
 
 ## Package Card — modal-3D
 
-3D Generation Provider。拥有模型选择、GPU 推理和模型输入 conditioning。
+3D Generation Provider。拥有模型选择、GPU 推理与输入 conditioning。
 
 ## Package Card — modal-EmbodiedGen
 
-EmbodiedGen build/runtime integration。拥有 upstream pin、兼容 patch、可复现 CUDA/PyTorch 构建产物与 Modal runtime。上游 `HorizonRobotics/EmbodiedGen` 仅是 source dependency。
+EmbodiedGen build/runtime integration。拥有 upstream pin、兼容 patch、可复现 CUDA/PyTorch 构建产物与 Modal runtime。
 
 # CARD 03 — AgentScape-plan
 
@@ -90,20 +149,21 @@ EmbodiedGen build/runtime integration。拥有 upstream pin、兼容 patch、可
 
 **Does not own**：任何产品 runtime 或部署。
 
-# Retired Repository Cards
+# Retired Repository / Runtime Surfaces
 
-以下名称只允许出现在迁移/历史说明，不得作为当前 Repository Card：
+以下名称只能出现在 migration/history，不得重新作为当前 architecture surface：
 
 ```text
 AgentScape-agent
 modal-inference-hub
-modal-gen-client          (standalone repo)
-modal-2D-client           (standalone repo)
-modal-2D                  (standalone repo)
-modal-3D-client           (standalone repo)
-modal-3D                  (standalone repo)
 kaggle-inference-hub
-modal-build               (standalone repo)
-EmbodiedGen               (standalone AgentScape workspace repo)
-modal-lab
+modal-build standalone
+EmbodiedGen standalone AgentScape repo
+modal-lab standalone
+
+LegacyAuthoringShell
+runtime.authoring
+HttpAssetGenerator
+/api/capabilities/asset-generate
+agentscape.providers.* direct-provider SDK
 ```
