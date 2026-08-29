@@ -4,7 +4,7 @@
 
 | Old integration | Target integration | Decision |
 |---|---|---|
-| `AgentScape-agent → AgentScape` | Agent logic lives in `AgentScape/src/agent` | MERGED |
+| `AgentScape-agent → AgentScape` | Agent logic lives in `AgentScape/agent` | MERGED |
 | `modal-inference-hub → providers` | Human workflow lives in `AgentScape`; uses same provider boundary | MERGED/RETIRED |
 | `AgentScape → modal-gen-client repo` | `AgentScape → modal-provider` connector contract | MERGED |
 | `modal-gen-client → modal-2D-client` | internal `modal-provider` package edge | MERGED |

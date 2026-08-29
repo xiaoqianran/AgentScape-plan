@@ -1,32 +1,44 @@
 # Repository Architecture Cards
 
-本文件描述 **当前仓库边界**。旧的 14-repository card 已作废。
+本文件描述当前仓库边界。`AgentScape` 内部不再使用总 `src/` 容器；根目录直接表达稳定产品 subsystem。
 
 # CARD 01 — AgentScape
 
-**Identity**：Agent orchestration + Human workflow + Asset/World domain core。
+**Identity**：Agent orchestration + Human Studio + Generation control plane + Asset/World domain core。
 
 ```text
 AgentScape
-├─ src/agent            Agent / LLM / VLM / Tools
-├─ src/skills           reusable capability workflows
-├─ src/ui               Human task/run/editor surfaces
-├─ src/connector        provider-neutral connector client
-├─ src/jobs             generation job projection/reconcile
-├─ src/artifacts        artifact admission/integrity
-├─ src/providers        provider registry/snapshot
-├─ src/assets           reusable asset domain
-├─ src/compiler         asset/world compilation
-├─ src/runtime          world runtime
-├─ src/validation       verification
-└─ sdk/python           first-party SDK/CLI
+├─ studio/        Human app / editor / UI / local persistence
+├─ agent/         Agent / LLM / tools / skills / recovery
+├─ generation/    Job / Artifact / Connector / Provider-facing orchestration
+├─ asset/         Asset truth / admission / adapters / compiler
+├─ world/         World spec / compiler / runtime / verification / content
+├─ core/          business-neutral primitives only
+├─ api/           Vercel Functions deployment boundary
+├─ services/      independently runnable services
+├─ sdk/           externally consumed SDKs
+├─ tests/         cross-domain integration/regression/e2e
+└─ tooling/       repository validators / scripts / experiments
 ```
 
-**Owns**：Agent Run、Human workflow、admitted Artifact、Asset、World、Runtime truth。
+**Owns**：Agent Run、Human workflow、provider-neutral Generation projection、admitted Artifact、Asset、World、Runtime truth。
 
 **Does not own**：Modal credential/runtime、GPU model lifecycle、Provider-private Job/Artifact storage。
 
-**Public integration**：只依赖稳定 Connector/Provider capability、Job、Artifact contract。
+## Internal ownership rules
+
+```text
+studio       → human-facing composition
+agent        → agent-facing composition
+generation   → provider consumer + Artifact→Asset orchestration
+asset        → reusable Asset truth
+world        → World truth/runtime/verification
+core         → no product-domain dependency
+```
+
+禁止重新引入根级 `src/`、`pipeline/`、`validation/`、`adapters/`、`helpers/`、`utils/` 作为技术型总目录。代码必须跟 owner 走。
+
+`api/`、`services/`、`sdk/` 可以占据根目录，是因为它们分别拥有真实 deployment/release boundary，而不是为了技术分类。
 
 # CARD 02 — modal-provider
 

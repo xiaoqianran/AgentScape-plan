@@ -96,7 +96,7 @@ modal-provider/
 
 | 旧边界 | 当前状态 |
 |---|---|
-| `AgentScape-agent` | 已并入 `AgentScape` 的 `src/agent`、Skills、Gateway/Run 体系 |
+| `AgentScape-agent` | 已并入 `AgentScape` 的 `agent/`、Skills、Gateway/Run 体系 |
 | `modal-inference-hub` | 独立仓库退役；Human workflow/UI 归 `AgentScape` |
 | `modal-gen-client` | `modal-provider/modal-gen-client` |
 | `modal-2D-client` | `modal-provider/modal-2D-client` |

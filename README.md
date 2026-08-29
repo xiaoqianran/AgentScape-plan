@@ -43,6 +43,7 @@
 7. [`migration/roadmap.md`](migration/roadmap.md) — 后续清理 Gate。
 8. [`status/verified-baseline.md`](status/verified-baseline.md) — 当前已验证基线。
 9. [`adr/0006-modal-provider-consolidation.md`](adr/0006-modal-provider-consolidation.md) — 本轮仓库收敛决策。
+10. [`adr/0007-domain-root-repository-layout.md`](adr/0007-domain-root-repository-layout.md) — AgentScape domain-root 目录与依赖门禁。
 
 ## 不变量
 
