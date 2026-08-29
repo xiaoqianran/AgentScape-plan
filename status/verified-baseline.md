@@ -13,15 +13,15 @@ AgentScape-plan   architecture documentation authority
 AgentScape main baseline：
 
 ```text
-commit 17d8998
-refactor: converge AgentScape runtime boundaries
+commit 1bf17a6
+feat: add runtime observatory
 ```
 
 Provider repository 不以 submodule 形式 pin 到 AgentScape；旧 `repos:*` / recursive submodule tooling 已删除。
 
 ## Product/domain baseline
 
-AgentScape 当前正式 product roots：
+AgentScape 当前六个 business product/domain roots：
 
 ```text
 studio/
@@ -31,6 +31,14 @@ asset/
 world/
 core/
 ```
+
+Developer Product Surface：
+
+```text
+observatory/
+```
+
+Observatory 单向消费 production Runtime/domain，不拥有业务 truth。
 
 真实 engineering/release boundaries：
 
@@ -83,6 +91,19 @@ public/
 - World viability benchmark；
 - generated-world rollback / bounded retry / revision lineage。
 
+
+## Observatory baseline
+
+必须保持：
+
+- independent `/observatory/` Vite entry；
+- Physics Lab：Rapier/Jolt、normalized comparison、fixed-step replay；
+- Spatial Lab：BVH raycast、bounds/overlap、support/free-space；
+- `PhysicsSystem.debugSnapshot()` / `SpatialSystem.debugSnapshot()` observation boundary；
+- production code 不依赖 Observatory；
+- synthetic fixture 不复制 production Manifest；
+- Observatory tests 位于 `tests/observatory/`。
+
 ## Python SDK baseline
 
 Python SDK 是 Unified Connector consumer。
@@ -119,6 +140,7 @@ tests/asset
 tests/generation
 tests/world
 tests/studio
+tests/observatory
 tests/contracts
 tests/integration
 tests/e2e
@@ -146,14 +168,14 @@ Asset Compiler Service
 
 主 Gate 不使用 path filter，因此跨模块 contract 变化不能因为“没改那个目录”而漏测。
 
-## Verified Gate — AgentScape 17d8998
+## Verified Gate — AgentScape 1bf17a6
 
 ```text
 architecture validation   PASS
 convergence validation    PASS
 world viability           PASS
-JS test files             176 PASS
-JS tests                  829 PASS
+JS test files             180 PASS
+JS tests                  858 PASS
 production build          PASS
 Python SDK tests          130 PASS
 Asset Compiler tests        7 PASS

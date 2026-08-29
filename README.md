@@ -45,6 +45,7 @@
 9. [`adr/0006-modal-provider-consolidation.md`](adr/0006-modal-provider-consolidation.md) — 本轮仓库收敛决策。
 10. [`adr/0007-domain-root-repository-layout.md`](adr/0007-domain-root-repository-layout.md) — AgentScape domain-root 目录与依赖门禁。
 11. [`adr/0008-agentscape-convergence.md`](adr/0008-agentscape-convergence.md) — 单一 GenerationRuntime、Connector-only Provider discovery、SDK/Skill/CI 收敛。
+12. [`adr/0009-observatory-developer-surface.md`](adr/0009-observatory-developer-surface.md) — Observatory Developer Surface、单向依赖与 Runtime debug contract。
 
 ## 不变量
 
@@ -54,6 +55,7 @@ Package boundary      != repository boundary
 Provider output       != Asset truth
 Asset truth           != World truth
 Human caller          == Agent caller at capability boundary
+Observatory            != business truth owner
 ```
 
 任何新文档若重新把 `modal-2D`、`modal-3D`、各 client 或 `modal-build` 写成独立仓库，都属于架构回退。

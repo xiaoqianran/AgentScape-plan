@@ -9,6 +9,7 @@
 ```text
 AgentScape
 ├─ studio/        Human app / editor / UI / local persistence
+├─ observatory/   Developer Runtime observation surface
 ├─ agent/         Agent loop / gateway / prompt policies / domain skill packs
 ├─ generation/    GenerationRuntime / Connector / Job / Artifact / Provider projection
 ├─ asset/         Asset truth / admission / adapters / compiler
@@ -32,6 +33,11 @@ studio
   → Human composition
   → owns GenerationJobCenter UI
 
+observatory
+  → Developer observation surface
+  → consumes production Runtime/domain only
+  → owns no business truth
+
 agent
   → Agent Run
   → domain skill packs
@@ -54,6 +60,18 @@ world
 core
   → business-neutral primitive only
 ```
+
+
+### Observatory constraints
+
+```text
+Observatory → production Runtime/domain   allowed
+Production → Observatory                  forbidden
+```
+
+Observatory 只消费 production debug/semantic contract；不实现第二套 Physics/Spatial/Asset truth。Synthetic fixture 不得复制 production Manifest contract。
+
+当前 tests 归 `tests/observatory/`。
 
 ### Generation constraints
 
@@ -92,6 +110,7 @@ asset/
 generation/
 world/
 studio/
+observatory/
 contracts/
 integration/
 e2e/

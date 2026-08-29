@@ -11,7 +11,7 @@ User / Human / LLM
 ┌──────────────────────────────────────────────┐
 │                  AgentScape                  │
 │                                              │
-│ Studio / Agent / Skills / Prompt policies    │
+│ Studio / Observatory / Agent / Skills        │
 │ GenerationRuntime                            │
 │ Connector session + capability snapshot      │
 │ Job / Artifact projection                    │
@@ -43,6 +43,7 @@ AgentScape owns:
 - Agent Run、Tool Calling、LLM/VLM gateway；
 - domain skill packs 与可组合 Agent prompt policies；
 - Human-facing Studio / Task / Run / Editor；
+- Developer-facing Observatory（Physics/Spatial observation surface）；
 - `GenerationRuntime` provider-neutral generation composition；
 - Connector session、capability snapshot 与 ProviderRegistry projection；
 - Job / Artifact projection、Artifact integrity gate；
@@ -115,7 +116,32 @@ Agent → Agent skills → GenerationRuntime / World tools
 
 `GenerationJobCenter` 是 Studio UI，归 `studio/ui/generation/`；Generation domain 不拥有 DOM/UI。
 
-## 5. Python SDK
+
+## 5. Developer Observatory
+
+Observatory 是 AgentScape 内的 Developer Product Surface，不是新的 domain truth owner：
+
+```text
+Production Runtime / Domain
+       ▲             ▲
+       │             │
+    Studio      Observatory
+     uses        observes
+
+Production ─────X────► Observatory
+```
+
+规则：
+
+- Observatory 可以 import production Physics/Spatial/Asset/World contract；
+- production module 禁止反向依赖 Observatory；
+- Scenario 必须驱动 production implementation；
+- synthetic geometry 可以存在，但 production Manifest/Schema 不得复制；
+- UI 只消费 normalized debug snapshot，不穿透 solver-private world handle。
+
+当前正式 Lab：Physics、Spatial。未来 Navigation/Interaction/Agent Lab 继续遵循同一规则。
+
+## 6. Python SDK
 
 Python SDK 是 Unified Connector consumer，而不是 Provider client collection。
 
@@ -132,7 +158,7 @@ normalized request builders / contracts
 
 Kaggle/direct Modal Provider client 与 direct pipeline 已从 public surface 删除。
 
-## 6. `modal-provider` monorepo
+## 7. `modal-provider` monorepo
 
 ```text
 modal-provider/
@@ -146,7 +172,7 @@ modal-provider/
 
 这些是 package/deployment/runtime boundary，不是新的 repository-level architecture authority。
 
-## 7. State Ownership
+## 8. State Ownership
 
 ```text
 Agent Run / mutation identity       → AgentScape
@@ -160,11 +186,12 @@ Admitted Artifact identity         → AgentScape
 Asset semantic truth               → AgentScape
 World desired/compiled/live truth  → AgentScape
 Runtime verification/acceptance    → AgentScape
+Observatory debug projection        → AgentScape developer surface
 Build/runtime compatibility        → modal-provider
 Architecture decisions             → AgentScape-plan
 ```
 
-## 8. Global invariants
+## 9. Global invariants
 
 1. Provider package 可以拆，repository boundary 不因此增加。
 2. AgentScape source code 不硬编码远程 Provider topology。
@@ -174,3 +201,4 @@ Architecture decisions             → AgentScape-plan
 6. World core 不依赖 Generation/Studio/Agent，只消费窄 Asset contract。
 7. `EmbodiedGen` 是 upstream/source dependency，不是 AgentScape runtime authority。
 8. Kaggle、旧 Hub、旧 Lab、LegacyAuthoring/direct generator 不再拥有平行生产主链。
+9. Production runtime never depends on Observatory.

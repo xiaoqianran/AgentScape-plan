@@ -9,6 +9,7 @@
 - [x] ADR-0006 固化 repository consolidation。
 - [x] ADR-0007 固化 AgentScape domain-root layout。
 - [x] ADR-0008 固化 Generation/SDK/Skill/CI convergence。
+- [x] ADR-0009 固化 Observatory Developer Surface 与单向 observation contract。
 
 ## R2 — AgentScape runtime convergence
 
@@ -39,7 +40,20 @@
 - [x] 新增无 path-filter 的统一 AgentScape PR/push Gate。
 - [x] Runtime、Python SDK、Asset Compiler Service 都进入统一 CI workflow。
 
-## R5 — Provider monorepo maintenance
+
+## R5 — Developer Observatory
+
+- [x] 根级 `observatory/` 正式化为 Developer Product Surface。
+- [x] Production → Observatory 反向依赖进入 architecture gate。
+- [x] Physics normalized debug contract 与 Rapier/Jolt comparison。
+- [x] Spatial/BVH observation Lab。
+- [x] Synthetic hinge 复用 production cabinet Manifest。
+- [x] Observatory tests 收敛到 `tests/observatory/`。
+- [ ] Navigation / Recast Lab。
+- [ ] Interaction Lab。
+- [ ] Agent Run / AgentTools Lab。
+
+## R6 — Provider monorepo maintenance
 
 以下属于 `modal-provider` 自己的 package-level 持续维护，不要求恢复 repository split：
 

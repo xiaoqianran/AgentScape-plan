@@ -245,7 +245,45 @@ Prompt policy 只保存跨工具执行不变量，例如：
 
 Prompt 不复制 Provider topology 或完整 Tool schema。
 
-# 11. Contract Versioning
+
+# 11. Developer Observation Contract
+
+Observatory 使用 production Runtime 提供的只读 normalized snapshot；snapshot 不是新的业务 source of truth。
+
+## PhysicsDebugSnapshot
+
+```text
+PhysicsDebugSnapshot
+├─ schemaVersion
+├─ backend
+├─ bodies[]
+├─ colliders[]
+├─ joints[]
+├─ contacts[]
+├─ nativeGeometry?   optional backend observation
+└─ metrics
+```
+
+约束：
+
+- 不暴露 solver-private world/body/collider handle；
+- collider / contact 必须保留 AgentScape provenance；
+- native geometry optional，不能成为跨 backend 必备 contract；
+- 若 contact 没有精确 world-space contact point，visualization anchor 必须显式标记其推导类型，不能冒充 solver evidence。
+
+## SpatialDebugSnapshot
+
+```text
+SpatialDebugSnapshot
+├─ schemaVersion
+├─ bounds[]
+├─ collisionPairs[]
+└─ metrics
+```
+
+Ray/support/free-space 的实验 query evidence 可以由 Observatory scenario context 附加，但不得写回 Spatial business truth。
+
+# 12. Contract Versioning
 
 - 只对跨边界稳定 contract 版本化；
 - Provider 私有字段自主演化；
@@ -253,7 +291,7 @@ Prompt 不复制 Provider topology 或完整 Tool schema。
 - 破坏性协议改动必须新 major/versioned operation；
 - 内部 helper/function 不定义协议版本。
 
-# 12. Validation Gates
+# 13. Validation Gates
 
 ```text
 Connector snapshot

@@ -167,7 +167,43 @@ Connector request
 
 AgentScape 可保留 Asset compatibility adapter 来理解既有上游 payload，但 Provider-specific import tool 不属于默认 Agent capability surface。
 
-## 11. Removed runtime paths
+
+## 11. Observatory observation path
+
+```text
+Developer
+  → /observatory/
+  → ScenarioRunner + fixed-step SimulationClock
+  → production PhysicsSystem / SpatialSystem
+  → normalized debugSnapshot
+  → visualizer / assertion / backend comparison
+```
+
+Physics backend comparison：
+
+```text
+same Scenario + same fixed dt
+   ├─ Rapier production backend
+   └─ Jolt production backend
+        ↓
+normalized body/collider/joint/contact snapshot
+        ↓
+comparison
+```
+
+Observatory 不直接读取 solver-private world handle；native debug geometry 只能通过 backend optional observation contract 暴露。
+
+Spatial/BVH：
+
+```text
+WorldRuntime
+  → ThreeBvhRuntime
+  → ensureBoundsTrees on world admission/spawn
+  → SpatialSystem raycast
+  → Observatory only observes results
+```
+
+## 12. Removed runtime paths
 
 ```text
 runtime.authoring
