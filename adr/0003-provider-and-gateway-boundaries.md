@@ -1,5 +1,8 @@
 # ADR-0003 — Provider 与 Local Gateway 的稳定边界
 
+> **Repository-topology note (2026-08-29):** 本 ADR 的 Provider/Gateway 运行时边界原则仍有效；其中把各 Provider/Gateway 描述为独立仓库的部分已由 [ADR-0006](./0006-modal-provider-consolidation.md) supersede。
+
+
 **Status:** Accepted
 **Date:** 2026-08-27
 

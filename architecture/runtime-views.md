@@ -1,378 +1,114 @@
 # Runtime Views
 
-# 1. Text → Agent → 3D Asset → World
-
-这是未来 AgentScape 的旗舰自动化路径。
+## 1. Agent generation path
 
 ```text
-User Text
-   │
-   ▼
-AgentScape-agent
-   │ parse intent
-   ▼
-source_3d_asset Skill
-   │
-   ├─ search existing Asset ───────────────► AgentScape
-   │        │
-   │        └─ hit → reuse
-   │
-   └─ miss
-        │
-        ▼
-   generate N images
-        │
-        ▼
-   modal-2D-client
-        │
-        ▼
-     modal-2D
-        │
-        ▼
-   Image Artifacts
-        │
-        ▼
-   VLM evaluate / rank / retry
-        │
-        ▼
-   selected image + optional semantic mask
-        │
-        ▼
-   modal-3D-client
-        │
-        ▼
-     modal-3D
-        │ InputConditioner
-        ▼
-      3D Worker
-        │
-        ▼
-     GLB Artifact
-        │
-        ▼
-   Artifact verification
-        │
-        ▼
-   assetModule.publishAsset({ artifactId, assetId, label })
-        │
-        ├─ verified Artifact gate / lease / idempotency
-        ├─ Asset Compiler
-        ├─ Admission
-        └─ AssetRef
-        │
-        ▼
-     AgentScape
-   Asset Repository
-        │
-        ▼
-  Asset Repository
-        │
-        ▼
-    World Intent
-        │
-        ▼
-   World Compiler
-        │
-        ▼
-   WorldRuntime
-        │
-        ▼
-   Verification
+User text
+  → AgentScape ToolCallingAgent / Skill
+  → provider-neutral capability selection
+  → Connector session/job request
+  → modal-provider
+      → optional modal-gen-client
+      → modal-2D-client → modal-2D
+      → modal-3D-client → modal-3D
+  → Artifact descriptor + bytes
+  → AgentScape Artifact admission
+  → Asset Compiler / Asset admission
+  → World Compiler / WorldRuntime
+  → Verification
 ```
 
-失败所有权：
+Failure ownership：
 
 ```text
-LLM/VLM decision failure          → AgentScape-agent
-Provider transport/recovery       → Reference Sidecar
-GPU/model failure                 → Provider
-invalid PNG/GLB                   → Artifact verifier
-Asset semantic/admission failure  → AgentScape Asset Domain
-World relation/physics failure    → AgentScape World Domain/Runtime
+LLM/VLM decision failure       → AgentScape
+Skill/run recovery             → AgentScape
+Connector projection failure   → AgentScape connector/job layer
+Sidecar restore/cache failure  → modal-provider sidecar
+GPU/model failure              → modal-provider provider
+Artifact integrity failure     → producer + AgentScape admission gate
+Asset/World verification       → AgentScape
 ```
 
-# 2. Human modal-inference-hub Workflow
+## 2. Human workflow path
+
+Human 不再通过独立 `modal-inference-hub` 仓库进入系统。
 
 ```text
-Human Prompt / Source Image
-        │
-        ▼
-modal-inference-hub Project
-        │
-        ├─ generate image candidates ─► modal-2D-client
-        │
-        ├─ preview / compare
-        │
-        ├─ manual select
-        │
-        ├─ optional semantic mask/component edit
-        │
-        └─ generate 3D ───────────────► modal-3D-client
-                                              │
-                                              ▼
-                                           modal-3D
-                                              │
-                                              ▼
-                                          GLB Artifact
-                                              │
-                    ┌─────────────────────────┴─────────────┐
-                    ▼                                       ▼
-              keep in Project                     publish to AgentScape
+Human
+  → AgentScape UI / Task / Run / Editor
+  → same provider-neutral capability boundary
+  → modal-provider
+  → Artifact
+  → AgentScape Asset/World pipeline
 ```
 
-Human Hub 与 AgentScape-agent 是平级 Caller；二者共享 Sidecar/Provider 边界，但不共享 Project/AgentRun state。
+Human 与 Agent 共享 capability contract，但各自的交互状态都由 AgentScape 内部对应 domain 管理。
 
-# 3. Reference Sidecar Pattern
-
-2D 与 3D Client 必须保持相似职责：
+## 3. 2D → 3D composition
 
 ```text
-Caller
-  │ request
-  ▼
-Reference Sidecar
-  │
-  ├─ validate public request
-  ├─ stable request identity
-  ├─ local durable execution projection
-  ├─ provider submit/poll/cancel
-  ├─ restart recovery
-  ├─ artifact transport
-  ├─ content verification
-  └─ local content-addressed cache
-  │
-  ▼
-Provider
+AgentScape intent
+  → modal-provider/modal-2D-client
+  → modal-provider/modal-2D
+  → one or N image artifacts
+  → AgentScape/Caller selection
+  → modal-provider/modal-3D-client
+  → modal-provider/modal-3D
+  → GLB artifact
 ```
 
-Sidecar 不做：Project、Agent planning、Asset compilation、World placement。
+Provider-private artifact id、Volume path、Modal call id 不跨越 AgentScape admission boundary。
 
-# 4. modal-3D Input Conditioning
-
-目标 public contract 不应该要求 Caller 理解模型私有 canonical 规则。
+## 4. 3D input conditioning
 
 ```text
-Caller image
-+ optional trusted mask/alpha
-          │
-          ▼
-modal-3D-client
-transport unchanged
-          │
-          ▼
-modal-3D Provider API
-          │
-          ▼
-InputConditioner
-   │
-   ├─ decode / EXIF / color
-   │
-   ├─ valid alpha/mask?
-   │      ├─ yes → preserve
-   │      └─ no  → segmentation/rembg
-   │
-   ├─ foreground bbox
-   ├─ crop / center / scale
-   └─ model-private canonical representation
-          │
-          ▼
-Model Adapter / Worker
+source image
+  → modal-3D-client public input validation
+  → modal-3D conditioning path
+       ├─ trustworthy alpha/mask → preserve
+       └─ opaque input → segmentation/rembg when required
+  → canonical RGBA
+  → selected 3D worker
+  → GLB
 ```
 
-当前部署 baseline 仍要求：
+Conditioning 是 3D Provider 能力的一部分，不是独立业务仓库。
+
+## 5. EmbodiedGen path
 
 ```text
-1024×1024 RGBA PNG
-alpha channel required
-role = canonical_rgba
+AgentScape/provider request
+  → modal-provider/modal-EmbodiedGen runtime
+  → pinned upstream EmbodiedGen source
+  → provider artifact bundle
+  → AgentScape EmbodiedGenAdapter / admission
+  → Asset / World pipeline
 ```
 
-`041-modal-3d-provider` 记录该旧 contract 的真实可用性；未来迁移 InputConditioner 时必须保持 4 模型 E2E parity。
+`EmbodiedGen` upstream 不直接成为 AgentScape dependency graph 中的仓库节点。
 
-# 5. Candidate Selection Ownership
+## 6. Local security gateway
+
+`modal-gen-client` 只是 `modal-provider` 内的可选安全组件：
 
 ```text
-Image Candidates
-      │
-      ├─────────────────────┐
-      ▼                     ▼
-modal-inference-hub   AgentScape-agent
-Human judgment        VLM/Agent judgment
-      │                     │
-      └──────────┬──────────┘
-                 ▼
-        selected image/mask
+Browser/WebView
+  → modal-gen-client pairing/session/scope
+  → provider sidecar
+  → provider
 ```
 
-Provider/Sidecar 永远不决定“哪个候选符合用户意图”。
+Native/test caller 可以在满足安全边界时直接调用 sidecar contract；gateway 不是业务 authority。
 
-# 6. Artifact → Asset Publication
+## 7. Removed runtime paths
+
+以下运行链不再属于目标架构：
 
 ```text
-GLB Artifact
-   │ descriptor + bytes/location
-   ▼
-AgentScape Artifact Admission
-   │ structural/content findings
-   ▼
-Asset Compiler
-   │ semantic / geometry / collider / physics / actions
-   ▼
-Asset Admission
-   ├─ rejected
-   ├─ provisional
-   └─ ready
-        │
-        ▼
-Asset Repository
+AgentScape → kaggle-inference-hub
+AgentScape-agent standalone → providers
+modal-inference-hub standalone → providers
+modal-build standalone → EmbodiedGen runtime
+modal-lab → production capability
 ```
-
-Provider `success` 不能跳过 AgentScape Asset Admission。
-
-# 7. Asset → World Placement
-
-```text
-Reusable Asset: red_apple
-          │
-          │ reference
-          ▼
-World Instance: apple_01
-          │
-          ├─ ON table_01
-          ├─ NEAR cup_01
-          └─ transform = compiler output
-          │
-          ▼
-World Compiler
-          │
-          ▼
-Desired World
-          │
-          ▼
-WorldRuntime
-          │
-          ▼
-Observed World
-          │
-          ▼
-Verification
-```
-
-Asset identity 与 World placement 永久分离。
-
-当前已验证 execution seam：
-
-```text
-Caller / legacy authoring
-  assetRequests: query / generate / provider
-                │
-                ▼ resolve/admit
-Asset Module ── AssetRef { assetId }
-                │
-                ▼
-World Compilation v2
-  entities: id + assetRef + transform/state
-                │
-                ▼
-Layout / Behavior / Physics / Runtime
-```
-
-`query / generate / provider` 不再穿透到 World execution；兼容 resolution evidence 独立保存在 `assetResolutions`。
-
-# 8. Desired State Reconciliation
-
-```text
-Desired: apple ON table
-          │
-          ▼
-Observed: apple elsewhere
-          │
-          ▼
-Reconcile / placement
-          │
-          ▼
-Verify: support.on == true
-```
-
-```text
-Desired: agent HOLDS apple
-          │
-          ▼
-Observed: not held
-          │
-          ▼
-Navigate → pickup
-          │
-          ▼
-Verify: heldBy == agent
-```
-
-# 9. Browser / Local Security Gateway
-
-```text
-Browser / WebView
-      │ no privileged credential
-      ▼
-modal-gen-client
- pairing / origin / scope
-      │
-      ▼
-Reference Sidecar
-      │
-      ▼
-Provider
-```
-
-这是部署 Adapter，不是业务 workflow。Server-side Agent/Hub 可以直接调用 Sidecar。
-
-# 10. Kaggle Queue Provider
-
-```text
-Caller
-   │ submit
-   ▼
-Consumer API
-   │
-   ▼
-Task Core / Queue
-   │ lease
-   ├──────────────┐
-   ▼              ▼
-Worker A       Worker B
-   │              │
-heartbeat      heartbeat
-   └──────┬───────┘
-          ▼
-     upload/complete
-          │
-          ▼
-     Artifact Store
-```
-
-Consumer API 永远不暴露 claim/heartbeat/lease。
-
-# 11. modal-build Build → Runtime
-
-```text
-Pinned Upstream
-     │
-     ▼
-Patch Inventory
-     │
-     ▼
-Build Definition
-     │
-     ▼
-Build Verification
-     │
-     ▼
-Immutable Runtime Artifact
-     │
-     ▼
-Embodied Runtime Plane
-     │
-     ▼
-Artifacts / Provider Evidence
-```
-
-Runtime request 不在线重建本应离线固定的 CUDA/ABI dependency。

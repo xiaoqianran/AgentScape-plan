@@ -1,172 +1,39 @@
 # Integration Ledger
 
-本文件记录**当前真实箭头**和**目标箭头**。Architecture Card 描述 Target；Ledger 负责防止我们把 Target 当成 Reality。
+2026-08-29 起，Ledger 以收敛后的仓库边界为准。
 
-状态：`KEEP` 保留；`MOVE` 改 Owner；`SIMPLIFY` 收缩；`REMOVE` 删除；`ADD` 新增；`MIGRATED` 已完成并有证据；`VERIFY` 尚未确认。
+| Old integration | Target integration | Decision |
+|---|---|---|
+| `AgentScape-agent → AgentScape` | Agent logic lives in `AgentScape/src/agent` | MERGED |
+| `modal-inference-hub → providers` | Human workflow lives in `AgentScape`; uses same provider boundary | MERGED/RETIRED |
+| `AgentScape → modal-gen-client repo` | `AgentScape → modal-provider` connector contract | MERGED |
+| `modal-gen-client → modal-2D-client` | internal `modal-provider` package edge | MERGED |
+| `modal-2D-client → modal-2D` | internal `modal-provider` package edge | MERGED |
+| `modal-gen-client → modal-3D-client` | internal `modal-provider` package edge | MERGED |
+| `modal-3D-client → modal-3D` | internal `modal-provider` package edge | MERGED |
+| `AgentScape → kaggle-inference-hub` | none | REMOVE |
+| `modal-build → EmbodiedGen` | `modal-provider/modal-EmbodiedGen → pinned upstream` | MERGED |
+| `AgentScape workspace → EmbodiedGen submodule/repo` | provider-owned upstream pin/clone | REMOVE REPO BOUNDARY |
+| `modal-lab → migration evidence` | experiments stay with owning repo/package | REMOVE |
 
-## 1. Caller Layer
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| `User Text → AgentScape internal ToolCallingAgent` | Agent 仍在 AgentScape Core 内 | `User Text → AgentScape-agent` 独立仓 | **MOVE / ADD REPO** |
-| `AgentScape-agent → modal-2D-client` | 不存在 | Agent image-generation Tool Adapter | **ADD** |
-| `AgentScape-agent → modal-3D-client` | 不存在 | Agent 3D-generation Tool Adapter | **ADD** |
-| `AgentScape-agent → AgentScape` | 不存在 | search/publish Asset + build/observe World | **ADD** |
-| `Human → old modal-3D-client UI` | 存在；仓库同时拥有 Project/Preprocess/3D execution | `Human → modal-inference-hub` | **RENAME + PURIFY** |
-| `modal-inference-hub → modal-2D-client` | 尚未形成稳定边界 | image candidate workflow | **ADD** |
-| `modal-inference-hub → modal-3D-client` | 旧 Hub 仍直接执行 3D | 改为纯 Sidecar 调用 | **MOVE** |
-| `modal-inference-hub → AgentScape` | 非核心稳定路径 | optional publish Asset / inspect World | **ADD OPTIONAL** |
-
-## 2. AgentScape Current Coupling
-
-当前代码审计锚点：
+## Current legal repository edges
 
 ```text
-AgentScape/src/runtime/WorldRuntime.js
-AgentScape/src/authoring/GenerationOrchestrator.js
-AgentScape/src/authoring/GenerationJobCenter.js
-AgentScape/src/providers/ProviderRegistry.js
-AgentScape/src/adapters/EmbodiedGenAdapter.js
+AgentScape
+   │ provider-neutral contract
+   ▼
+modal-provider
+   │ source/model/runtime upstreams
+   ▼
+external services / pinned upstream source
+
+AgentScape-plan
+   └─ documentation only; no runtime edge
 ```
 
-| Arrow | Current Problem | Target | Verdict |
-|---|---|---|---|
-| `WorldRuntime → ConnectorClient` | World Domain 知道 transport/provider | WorldRuntime 只消费 compiled Asset/World | **REMOVE** |
-| `WorldRuntime → GenerationOrchestrator` | Runtime 与 generation lifecycle 耦合 | generation 移到 Caller (`AgentScape-agent`/Hub) | **REMOVE** |
-| `AssetLibrary → GenerationOrchestrator` | Repository 同时 search + generate | AssetLibrary removed；AssetCatalog 为唯一 read API | **MIGRATED 2026-08-28 (`a0b522a`, `86a2232`)** |
-| `GenerationOrchestrator → ProviderRegistry` | discovery/execute/composition 混合 | legacy authoring only; future Agent/Hub Tool Adapter 调 Sidecar | **CORE REMOVED 2026-08-28 (`ef2830d`), RETIRE LEGACY LATER** |
-| `GenerationOrchestrator → AssetCompiler` | provider execution 和 domain compile 混合 | `assetModule.publishAsset(Artifact)` | **MIGRATED 2026-08-28 (`9369e12`)** |
-| `AgentScape internal Agent → provider jobs` | Agent sees low-level execution surface | 独立 Agent 选择 Skill；Skill 隐藏 poll/download | **MOVE** |
+## Forbidden reintroductions
 
-## 3. modal-2D Path
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| `modal-2D-client → modal-2D` | durable mirror + Volume-first Artifact fetch | 保持 | **MIGRATED 2026-08-27** |
-| `modal-gen-client → modal-2D-client` | Connector adapter 已存在 | optional security transport only | **KEEP + SHRINK** |
-| `AgentScape-agent → modal-2D-client` | one batch Job → N verified candidate artifacts | 保持深 Tool Adapter；跨进程 rebind 同 batch Job | **MIGRATED 2026-08-28** |
-| `modal-inference-hub → modal-2D-client` | 不存在稳定调用 | human image candidate generation | **ADD** |
-
-真实 Gate：`040-modal-2d-provider`。
-
-## 4. modal-3D Path
-
-当前现实：
-
-```text
-old modal-3D-client (renamed remote → modal-inference-hub)
-  owns Project + rembg/preprocess + Modal session + generation Job + GLB artifact
-                    │
-                    ▼
-                 modal-3D
-```
-
-目标：
-
-```text
-modal-inference-hub               AgentScape-agent
-        │                               │
-        └──────────────┬────────────────┘
-                       ▼
-               modal-3D-client
-        transport / durable execution
-                       │
-                       ▼
-                   modal-3D
-                 InputConditioner
-                       │
-                       ▼
-                   3D Worker
-```
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| `old Hub generation code → modal-3D` | 直接 Modal execution | Hub → new modal-3D-client | **MOVE** |
-| `old Hub preprocess → canonical RGBA` | Project-level rembg/component/canonical | Human semantic selection 留 Hub；model-required conditioning 下沉 Provider | **SPLIT OWNERSHIP** |
-| `new modal-3D-client → modal-3D` | **已改**：上传 `source-inputs/` 原图（png/jpeg/webp，≤20MiB，alpha 可选），不拥有 rembg | Sidecar 上传 image + optional mask，不拥有 rembg | **MIGRATED 2026-08-28 (`modal-3D@487b661`)** |
-| `modal-3D Provider API → canonical RGBA` | **已改**：public 接受 image/* + optional alpha；canonical 降为 worker 内部契约 | public image/mask → internal canonical | **MIGRATED 2026-08-28，PARITY GATE PENDING** |
-| `modal-gen-client → old 3D client` | 现有 adapter 指向旧应用 | 指向 new modal-3D-client | **MOVE** |
-
-真实 Gate：`041-modal-3d-provider`，先记录当前 canonical baseline，再迁 InputConditioner。
-
-**迁移现状（2026-08-28）。** Conditioning 已下沉 Provider：
-
-```text
-Caller / Sidecar
-  upload 原图 → source-inputs/
-                    │
-                    ▼
-        rembg_gateway.condition()
-          ├─ meaningful alpha → preserve-alpha
-          └─ opaque → RemBgWorker → refine_mask → birefnet
-                    │
-                    ▼
-        canonical 1024×1024 RGBA
-                    │
-                    ▼
-              3D Worker（只认 canonical）
-```
-
-`client-inputs/` 走 `_legacy_canonical()` pass-through，字节原样保留，
-因此 `041` 仍可作为 strict parity gate 重跑。
-
-**状态：`CODE DONE / PARITY GATE PENDING`。** 代码层已 87/87 PASS，
-但 `041` 四模型矩阵尚未用 `source-inputs/` 路径重跑，
-因此 `modal-3D` conditioning 路径**尚未标记 verified**。
-Parity 清单见 [`migration/roadmap.md` R3B](../migration/roadmap.md)。
-
-## 5. Candidate Selection
-
-| Responsibility | Owner |
-|---|---|
-| Human manual selection/mask edit | `modal-inference-hub` |
-| Agent/VLM candidate ranking | `AgentScape-agent` |
-| Provider automatic model conditioning | `modal-3D` |
-| Sidecar transport validation | `modal-3D-client` |
-
-禁止把“用户想选哪个物体”和“模型需要怎样 crop/rembg”重新合并成一个 Preprocess Service。
-
-## 6. Artifact → Asset → World
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| Provider output → `GenerationOrchestrator` import | 自动 generation path | Caller gets verified Artifact | **REMOVE LEGACY** |
-| Caller → AgentScape Asset API | `assetModule.publishAsset({ artifactId, assetId, label })` | stable Artifact → Asset entrance | **MIGRATED 2026-08-28 (`9369e12`)** |
-| Asset → World | 已存在 compiler/pipeline | World references reusable Asset ID | **KEEP + PURIFY** |
-| WorldRuntime → Provider | 仍有 legacy coupling | 永久禁止 | **REMOVE** |
-
-## 7. modal-gen-client
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| Browser → modal-gen-client | pairing/origin/scope | 保留 | **KEEP** |
-| modal-gen-client → Sidecar | 同时带有历史 business routing | mechanical authorization/forwarding only | **SIMPLIFY** |
-| Server-side Agent/Hub → modal-gen-client | 可能被当统一中枢 | 可直接调用 Sidecar，不强制 Gateway | **REMOVE AS REQUIREMENT** |
-
-## 8. Kaggle / Embodied / Research
-
-| Arrow | Current | Target | Verdict |
-|---|---|---|---|
-| Caller → kaggle-inference-hub | AgentScape 主链未形成 canonical adapter | Consumer API Adapter | **VERIFY / ADD AFTER KAGGLE REWRITE** |
-| `modal-build → EmbodiedGen` | pinned build/runtime | Build Plane compatibility owner | **KEEP** |
-| Provider evidence → AgentScape | legacy adapter 可构造 domain payload | Artifact/Finding → AgentScape admission | **SIMPLIFY** |
-| Production Runtime → modal-lab | 无 canonical dependency | 永久保持无 dependency | **KEEP ABSENT** |
-| modal-lab → Architecture | 以前主要研究 | experiment evidence 可修改 Card/ADR | **ADD PROCESS** |
-
-## 9. Integration Rule
-
-任何新跨仓箭头必须回答：
-
-```text
-Purpose
-Caller
-Contract Owner
-Transport Owner
-State Owner
-Credential Owner
-Retry Owner
-Artifact Owner
-Failure mapping
-```
-
-如果一条箭头需要 Caller 直接访问对方私有 SQLite/ORM/model object，默认判定为架构违规。
+- 不得让 AgentScape 依赖 `modal-provider` 内部文件路径。
+- 不得把 `modal-2D*` / `modal-3D*` 再写成顶层仓库依赖。
+- 不得恢复 Kaggle 作为平级生产 Provider，除非先新增 ADR。
+- 不得恢复独立 Human Hub/Agent 仓库，除非出现新的独立 state/security/deployment owner 并通过 ADR。

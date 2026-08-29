@@ -1,5 +1,8 @@
 # ADR-0004 — Caller / Capability / Asset / World 分离
 
+> **Repository-topology note (2026-08-29):** Caller/Capability/Asset/World 分层仍有效；`AgentScape-agent` / `modal-inference-hub` 作为独立仓库的决策已由 [ADR-0006](./0006-modal-provider-consolidation.md) supersede，相关能力现归 `AgentScape`。
+
+
 **Status:** Accepted
 **Date:** 2026-08-27
 

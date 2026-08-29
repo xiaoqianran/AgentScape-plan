@@ -1,5 +1,8 @@
 # ADR-0005 — Experiment-oriented Modular Monolith
 
+> **Repository-topology note (2026-08-29):** “按 state/security/deployment/failure pressure 拆边界”的方法仍有效；旧 `modal-lab`、独立 Agent/Hub/Provider 仓库拓扑已由 [ADR-0006](./0006-modal-provider-consolidation.md) supersede。
+
+
 **Status:** Accepted
 **Date:** 2026-08-28
 
